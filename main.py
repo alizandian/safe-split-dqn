@@ -1,6 +1,6 @@
-from safeDQN.models.AgentSafeDQNSplitted import AgentSafeDQNSplitted
-from safeDQN.models.AgentDQN import AgentDQN
-from safeDQN.environments.FixedCartPoleEnv import FixedCartPoleEnv
+from models.AgentSafeDQNSplitted import AgentSafeDQNSplitted
+from models.AgentDQN import AgentDQN
+from environments.FixedCartPoleEnv import FixedCartPoleEnv
 from experiment.nn_config import *
 from matplotlib import pyplot as plt
 

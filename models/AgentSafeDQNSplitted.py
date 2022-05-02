@@ -29,7 +29,15 @@ class AgentSafeDQNSplitted(object):
         self.monitor_dqn = DQN(input_dim = input_dim, output_dim = output_dim, nn_model = monitor_nn_model, gamma = gamma, verbose = verbose)
 
 
-    def get_action(self, input):
+    def get_action(self, input, theta = 0.9):
+        safety_q_val = self.monitor_dqn.get_q_values(np.array(input)[np.newaxis])[0]
+        mask = [ 1 if val >= theta else 0 for val in safety_q_val]
+        action_q_val = self.dqn.get_q_values(np.array(input)[np.newaxis])[0]
+        final_action_q_val = [ q * m for q, m in zip(action_q_val, mask) ]
+
+        if mask.count(1) == 0:
+            return np.argmax(action_q_val)
+
         self.frame_count += 1
         self.epsilon -= self.epsilon_interval / self.epsilon_greedy_frames
         self.epsilon = max(self.epsilon, self.epsilon_min)
@@ -38,13 +46,14 @@ class AgentSafeDQNSplitted(object):
             if self.previous_action_type != 0: 
                 print("--------------------------RANDOM---------------------------")
                 self.previous_action_type = 0
-            return np.random.randint(self.output_dim)
+            valid_actions = [ i for i, x in enumerate(mask) if x == 1]
+            return np.random.random.choice(valid_actions)
+
         else:
             if self.previous_action_type != 1: 
                 print("--------------------------CHOSE----------------------------")
                 self.previous_action_type = 1
-            q_values = self.dqn.get_q_values(np.array(input)[np.newaxis])[0]
-            return np.argmax(q_values)
+            return np.argmax(final_action_q_val)
 
     def train(self, batch_size=64, epoch=1):
         batch_size_ = min(batch_size, len(self.replay_buffer))
@@ -66,6 +75,10 @@ class AgentSafeDQNSplitted(object):
 
     def add_transition(self, trans):
         self.replay_buffer.append(trans)
+
+        violation = trans[-1]
+        if violation != 0:
+            self.counterexample_buffer.append(trans)
 
     def random_action(self):
         return np.random.randint(self.output_dim)
