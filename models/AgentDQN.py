@@ -1,5 +1,5 @@
-from safeDQN.models.ReplayBuffer import ReplayBuffer
-from safeDQN.models.DQN import DQN
+from models.ReplayBuffer import ReplayBuffer
+from models.DQN import DQN
 import numpy as np
 
 class AgentDQN(object):

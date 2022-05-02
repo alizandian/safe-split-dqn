@@ -1,7 +1,7 @@
 import tensorflow as tf
 import numpy as np
 
-from safeDQN.models.ReplayBuffer import ReplayBuffer
+from models.ReplayBuffer import ReplayBuffer
 
 class DQN(object):
 

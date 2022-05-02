@@ -4,7 +4,7 @@ import tensorflow as tf
 import numpy as np
 from keras.models import Model
 
-from safeDQN.models.ReplayBuffer import ReplayBuffer
+from models.ReplayBuffer import ReplayBuffer
 
 class DQNSplited(object):
 

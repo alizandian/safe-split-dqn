@@ -1,6 +1,6 @@
-from safeDQN.models.ReplayBuffer import ReplayBuffer
-from safeDQN.models.DQNSplited import DQNSplited
-from safeDQN.models.DQN import DQN
+from models.ReplayBuffer import ReplayBuffer
+from models.DQNSplited import DQNSplited
+from models.DQN import DQN
 import numpy as np
 
 class AgentSafeDQNSplitted(object):
@@ -60,6 +60,7 @@ class AgentSafeDQNSplitted(object):
         epoch_ = min(epoch, int(len(self.replay_buffer)/batch_size_)+1)
 
         loss = 0
+        loss_monitor = 0
         for i in range(0, epoch_):
             transitions = self.replay_buffer.sample(batch_size_)
             loss += self.dqn.learn(transitions, batch_size)
