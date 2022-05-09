@@ -6,14 +6,14 @@ from matplotlib import pyplot as plt
 
 MAX_EPISODE = 1001
 VISUALISATION = True
-PLOT_INTERVAL = 200
+PLOT_INTERVAL = 20
 
 def DQN_experiment():
     env = FixedCartPoleEnv()
-    i_dim, o_dim, DQN_nn = Smaller8x_SimplifiedCartPole_DQN_NN()
-    agent = AgentSafeDQNSplitted(i_dim, o_dim, DQN_nn)
-    # i_dim, o_dim, DQN_nn = SimplifiedCartPole_DQN_NN()
-    # agent = AgentDQN(i_dim, o_dim, DQN_nn)
+    i_dim, o_dim, DQN_nn = SimplifiedCartPole_DQN_NN()
+    i_dim, o_dim, ES_DQN_nn = Smaller8x_SimplifiedCartPole_DQN_NN()
+    agent = AgentSafeDQNSplitted(i_dim, o_dim, DQN_nn, ES_DQN_nn)
+
     rewards = []
 
     for i in range(0, MAX_EPISODE):
@@ -40,7 +40,7 @@ def DQN_experiment():
                     next_state[0] = ((degree - 5) / 100.0) * 5.0
                     next_state[1] = ((velocity - 5) / 100.0) * 10.0
                     s = np.stack([next_state])
-                    v = agent.dqn.get_model(next_state)[1].predict(s)
+                    v = agent.estimator_dqn.get_model(next_state)[1].predict(s)
                     #v = agent.dqn.Q_target.predict(s)
                     values[degree][9-velocity] = np.max(v)
 
