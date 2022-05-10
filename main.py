@@ -1,4 +1,4 @@
-from models.AgentSafeDQNSplitted import AgentSafeDQNSplitted
+from models.AgentSafeDQNSplit import AgentSafeDQNSplit
 from models.AgentDQN import AgentDQN
 from environments.FixedCartPoleEnv import FixedCartPoleEnv
 from experiment.nn_config import *
@@ -12,7 +12,7 @@ def DQN_experiment():
     env = FixedCartPoleEnv()
     i_dim, o_dim, DQN_nn = SimplifiedCartPole_DQN_NN()
     i_dim, o_dim, ES_DQN_nn = Smaller8x_SimplifiedCartPole_DQN_NN()
-    agent = AgentSafeDQNSplitted(i_dim, o_dim, DQN_nn, ES_DQN_nn)
+    agent = AgentSafeDQNSplit(i_dim, o_dim, DQN_nn, ES_DQN_nn)
 
     rewards = []
 
