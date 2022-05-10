@@ -1,9 +1,9 @@
 from models.ReplayBuffer import ReplayBuffer
-from models.DQNSplited import DQNSplited
+from models.DQNSplit import DQNSplit
 from models.DQN import DQN
 import numpy as np
 
-class AgentSafeDQNSplitted(object):
+class AgentSafeDQNSplit(object):
     def __init__(self, input_dim, output_dim, nn_model, estimator_nn_model, gamma = 1.0, replay_buffer_size = 500, target_update_interval = 100, verbose = False):
 
         self.input_dim = input_dim
@@ -26,7 +26,7 @@ class AgentSafeDQNSplitted(object):
         self.counterexample_buffer = ReplayBuffer(replay_buffer_size)
 
         self.dqn = DQN(input_dim = input_dim, output_dim = output_dim,nn_model = nn_model, gamma = gamma, verbose = verbose)
-        self.estimator_dqn = DQNSplited(input_dim = input_dim, output_dim = output_dim, nn_model = estimator_nn_model, gamma = gamma, verbose = verbose)
+        self.estimator_dqn = DQNSplit(input_dim = input_dim, output_dim = output_dim, nn_model = estimator_nn_model, gamma = gamma, verbose = verbose)
 
 
     def get_action(self, input, theta = 0.9):

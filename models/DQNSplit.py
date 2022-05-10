@@ -1,12 +1,9 @@
-import enum
 from typing import Iterator, Tuple
 import tensorflow as tf
 import numpy as np
 from keras.models import Model
 
-from models.ReplayBuffer import ReplayBuffer
-
-class DQNSplited(object):
+class DQNSplit(object):
 
     def __init__(self, input_dim, output_dim, nn_model, 
                 optimizer = 'adam', loss_function = 'mse', gamma = 1.0,
