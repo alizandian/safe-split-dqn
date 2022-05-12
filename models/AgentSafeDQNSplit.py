@@ -86,7 +86,27 @@ class AgentSafeDQNSplit(object):
 
         return loss, loss_estimator
 
+    # max_degree = -1
+    # min_degree = 1
+    # max_velocity = -1
+    # min_velocity = 1
     def add_transition(self, trans):
+        # degree = trans[0][0]
+        # velocity = trans[0][1]
+
+        # if degree > AgentSafeDQNSplit.max_degree:
+        #     AgentSafeDQNSplit.max_degree = degree
+        #     print(f"max degree = {AgentSafeDQNSplit.max_degree}")
+        # if degree < AgentSafeDQNSplit.min_degree:
+        #     AgentSafeDQNSplit.min_degree = degree
+        #     print(f"min degree = {AgentSafeDQNSplit.min_degree}")
+        # if velocity > AgentSafeDQNSplit.max_velocity: 
+        #     AgentSafeDQNSplit.max_velocity = velocity
+        #     print(f"max velocity = {AgentSafeDQNSplit.max_velocity}")
+        # if velocity < AgentSafeDQNSplit.min_velocity: 
+        #     AgentSafeDQNSplit.min_velocity = velocity
+        #     print(f"min velocity = {AgentSafeDQNSplit.min_velocity}")
+
         self.replay_buffer.append(trans)
 
         violation = trans[-1]

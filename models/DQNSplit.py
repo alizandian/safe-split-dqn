@@ -5,7 +5,7 @@ from keras.models import Model
 
 class DQNSplit(object):
 
-    def __init__(self, input_dim, output_dim, nn_model, 
+    def __init__(self, input_dim, output_dim, nn_model,
                 optimizer = 'adam', loss_function = 'mse', gamma = 1.0,
                 verbose=False):
 
@@ -13,8 +13,8 @@ class DQNSplit(object):
         self.output_dim = output_dim
 
         # Models are in 2d grid, and each entity is a tuple, first is the main and the second is the target
-        self.x_axis_model_count = 2
-        self.y_axis_model_count = 2
+        self.x_axis_model_count = 4
+        self.y_axis_model_count = 4
         self.models: list[list[tuple[Model, Model]]] = [[(tf.keras.models.clone_model(nn_model), tf.keras.models.clone_model(nn_model)) for j in range(self.y_axis_model_count)] for i in range(self.x_axis_model_count)]
 
         # further parameterisation can be implemented here
@@ -37,16 +37,16 @@ class DQNSplit(object):
         t = self.get_model_indecis(state)
         return self.models[t[0]][t[1]]
 
+    def clamp(self, n, smallest, largest): return max(smallest, min(n, largest))
+
     def get_model_indecis(self, state) -> Tuple[int, int]:
-        if state[0] >= 0:
-            if state[1] >= 0: 
-                return (1,1)
-            else:
-                return (1,0)
-        elif state[1] >= 0: 
-            return (0,1)
-        else:
-            return (0,0)
+        xl = 2.0 / self.x_axis_model_count
+        yl = 2.0 / self.y_axis_model_count
+
+        xi = self.clamp(int((state[0] + 1) / xl), 0, self.x_axis_model_count-1)
+        yi = self.clamp(int((state[1] + 1) / yl), 0, self.x_axis_model_count-1)
+
+        return (xi, yi)
 
     def get_q_values(self, state):
         return self.get_model(state[0])[0].predict(state)
