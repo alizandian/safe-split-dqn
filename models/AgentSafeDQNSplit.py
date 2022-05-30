@@ -23,7 +23,7 @@ class AgentSafeDQNSplit(object):
         self.replay_buffer = ReplayBuffer(replay_buffer_size)
         self.counterexample_buffer = ReplayBuffer(replay_buffer_size)
 
-        self.dqn = DQN(input_dim = input_dim, output_dim = output_dim,nn_model = nn_model, gamma = gamma, verbose = verbose)
+        self.dqn = DQN(input_dim = input_dim, output_dim = output_dim, nn_model = nn_model, gamma = gamma, verbose = verbose)
         self.estimator_dqn = DQNSplit(input_dim = input_dim, output_dim = output_dim, nn_model = estimator_nn_model, gamma = gamma, verbose = verbose)
 
 
