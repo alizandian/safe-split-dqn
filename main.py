@@ -12,6 +12,9 @@ PLOT_INTERVAL = 20
 normalizers=[2.5, 0.5]
 denormalizers=[0.40, 2.0]
 
+actions = []
+action_index = 0
+
 def normalize(state):
     state[0] = state[0] * normalizers[0]
     state[1] = state[1] * normalizers[1]
@@ -23,7 +26,7 @@ def denormalize(state):
     return state
 
 def DQN_experiment():
-    env = FixedCartPoleEnv()
+    env = FixedCartPoleEnv(seed=100)
     i_dim, o_dim, DQN_nn = SimplifiedCartPole_DQN_NN()
     i_dim, o_dim, ES_DQN_nn = Smaller8x_SimplifiedCartPole_DQN_NN()
     agent = AgentSafeDQNSplit(i_dim, o_dim, DQN_nn, ES_DQN_nn)
@@ -37,6 +40,7 @@ def DQN_experiment():
 
         while True:
             action = agent.get_action(state)
+            actions.append(action)
             next_state, reward, done, _ = env.step(action)
             next_state = normalize(next_state)
             trans = [state, action, reward, next_state, done]

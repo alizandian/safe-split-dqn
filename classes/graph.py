@@ -18,7 +18,7 @@ class Region:
                 return True
         elif self.y_min == region.y_min and self.y_max == region.y_max:
             if self.x_min == region.x_max:
-                self.x_min == region.x_min
+                self.x_min = region.x_min
                 return True
             elif self.x_max == region.x_min:
                 self.x_max = region.x_max

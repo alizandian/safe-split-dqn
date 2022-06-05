@@ -51,7 +51,7 @@ class FixedCartPoleEnv(gym.Env):
 
     metadata = {"render.modes": ["human", "rgb_array"], "video.frames_per_second": 50}
 
-    def __init__(self):
+    def __init__(self, seed = None):
         self.gravity = 9.8
         self.masspole = 2
         self.length = 0.5  # actually half the pole's length
@@ -75,7 +75,7 @@ class FixedCartPoleEnv(gym.Env):
         self.action_space = spaces.Discrete(2)
         self.observation_space = spaces.Box(-high, high, dtype=np.float32)
 
-        self.seed()
+        self.seed(seed)
         self.viewer = None
         self.state = None
 

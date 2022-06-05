@@ -65,13 +65,16 @@ class Grid:
 
                     new_ns = []
                     for (x, y) in ns:
-                        node.add_region(Region(x, x+1, y, y+1))
-                        if (x,y) not in assigned: assigned.append((x,y))
+                        if (x,y) not in assigned:
+                            node.add_region(Region(x, x+1, y, y+1))
+                            assigned.append((x,y))
 
                         neighburs = self.get_neighburs((x, y))
                         neighburs = [n for n in neighburs if n not in assigned]
                         new_ns.extend(neighburs)
                     ns = new_ns
+                    
+        print(nodes)
 
 
 
