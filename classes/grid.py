@@ -1,14 +1,82 @@
-from typing import List
+from typing import List, Tuple
+from .graph import Node, Region
 
 class Grid:
 
     cells: List[List[int]] = None
 
-    x = 5
-    y = 5
-
-    def __init__(self, x, y) -> None:
+    def __init__(self, x = 10, y = 10) -> None:
         self.x = x
         self.y = y
 
-        cells = [[0 for j in range(self.x)] for i in range(self.y)]
+        self.cells = [[0 for i in range(self.x)] for j in range(self.y)]
+
+        for i in range(self.x):
+            for j in range(self.y):
+                if (i <= 2 and j <= 2) or (i >= 7 and j >= 7):
+                    self.cells[i][j] = 1
+
+        print(self.cells)
+
+    def exists(self, location) -> bool:
+        if location[0] >= 0 and location[0] < self.x and location[1] >= 0 and location[1] < self.y:
+            return True
+        return False
+
+    def get_neighburs(self, location, radius=1) -> List[Tuple]:
+        ns = []
+
+        x, y = location
+        # right and left sides
+        for n in range((radius * 2) + 1):
+            offset = n - radius
+            l1 = (x + radius, y + offset)
+            l2 = (x - radius, y + offset)
+            if self.exists(l1): ns.append(l1)
+            if self.exists(l2): ns.append(l2)
+        
+        # top and bottom sides
+        for n in range((radius * 2) - 1):
+            offset = n - radius + 1
+            l1 = (x + offset, y + radius)
+            l2 = (x + offset, y - radius)
+            if self.exists(l1): ns.append(l1)
+            if self.exists(l2): ns.append(l2)
+
+        return ns
+
+    def grid_to_graph(self):
+        nodes = []
+        assigned = []
+        for i in range(self.x):
+            for j in range(self.y):
+                l = (i, j)
+                if l in assigned: continue
+                assigned.append(l)
+                value = self.cells[i][j]
+                node = Node()
+                nodes.append(node)
+                node.add_region(Region(i, i+1, j, j+1))
+
+                ns = self.get_neighburs(l)
+                while len(ns) != 0:
+                    ns = list(dict.fromkeys(ns))
+                    ns = [(x,y) for x,y in ns if value == self.cells[x][y]]
+
+                    new_ns = []
+                    for (x, y) in ns:
+                        node.add_region(Region(x, x+1, y, y+1))
+                        if (x,y) not in assigned: assigned.append((x,y))
+
+                        neighburs = self.get_neighburs((x, y))
+                        neighburs = [n for n in neighburs if n not in assigned]
+                        new_ns.extend(neighburs)
+                    ns = new_ns
+
+
+
+
+
+
+
+

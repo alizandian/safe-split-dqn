@@ -4,6 +4,8 @@ from environments.FixedCartPoleEnv import FixedCartPoleEnv
 from experiment.nn_config import *
 from matplotlib import pyplot as plt
 
+from classes.grid import Grid
+
 MAX_EPISODE = 1001
 VISUALISATION = True
 PLOT_INTERVAL = 20
@@ -68,5 +70,7 @@ def SafeDQN_experiment():
     pass
 
 if __name__ == "__main__":
-    DQN_experiment()
-    print("experiment done")
+    # DQN_experiment()
+    # print("experiment done")
+    s = Grid()
+    s.grid_to_graph()
