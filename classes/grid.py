@@ -14,9 +14,11 @@ class Grid:
         for i in range(self.x):
             for j in range(self.y):
                 if (i <= 2 and j <= 2) or (i >= 7 and j >= 7):
-                    self.cells[i][j] = 1
+                    self.cells[j][i] = 1
+                # if (i <= 2):
+                #     self.cells[j][i] = 1
 
-        print(self.cells)
+        #print(self.cells)
 
     def exists(self, location) -> bool:
         if location[0] >= 0 and location[0] < self.x and location[1] >= 0 and location[1] < self.y:
@@ -45,8 +47,8 @@ class Grid:
 
         return ns
 
-    def grid_to_graph(self):
-        nodes = []
+    def grid_to_graph(self) -> List[Node]:
+        nodes: List[Node] = []
         assigned = []
         for i in range(self.x):
             for j in range(self.y):
@@ -56,7 +58,12 @@ class Grid:
                 value = self.cells[i][j]
                 node = Node()
                 nodes.append(node)
-                node.add_region(Region(i, i+1, j, j+1))
+                if len(nodes) > 1:
+                    previous_node = nodes[-2]
+                    current_node = nodes[-1]
+                    previous_node.add_node(current_node)
+                    current_node.add_node(previous_node)
+                node.add_region(Region(j, j+1, i, i+1))
 
                 ns = self.get_neighburs(l)
                 while len(ns) != 0:
@@ -66,7 +73,7 @@ class Grid:
                     new_ns = []
                     for (x, y) in ns:
                         if (x,y) not in assigned:
-                            node.add_region(Region(x, x+1, y, y+1))
+                            node.add_region(Region(y, y+1, x, x+1))
                             assigned.append((x,y))
 
                         neighburs = self.get_neighburs((x, y))
@@ -74,7 +81,7 @@ class Grid:
                         new_ns.extend(neighburs)
                     ns = new_ns
                     
-        print(nodes)
+        return nodes
 
 
 

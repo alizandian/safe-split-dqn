@@ -3,6 +3,7 @@ from models.AgentDQN import AgentDQN
 from environments.FixedCartPoleEnv import FixedCartPoleEnv
 from experiment.nn_config import *
 from matplotlib import pyplot as plt
+from classes.visualization import draw_table, draw_graph
 
 from classes.grid import Grid
 
@@ -81,21 +82,23 @@ def SafeDQN_experiment():
     pass
 
 if __name__ == "__main__":
-    pv = []
-    actions, v = DQN_experiment()
-    pv.extend(v)
-    _, v = DQN_experiment(actions, (2,2))
-    pv.extend(v)
-    _, v = DQN_experiment(actions, (4,4))
-    pv.extend(v)
-    _, v = DQN_experiment(actions, (8,8))
-    pv.extend(v)
-    _, v = DQN_experiment(actions, (16,16))
-    pv.extend(v)
+    # pv = []
+    # actions, v = DQN_experiment()
+    # pv.extend(v)
+    # _, v = DQN_experiment(actions, (2,2))
+    # pv.extend(v)
+    # _, v = DQN_experiment(actions, (4,4))
+    # pv.extend(v)
+    # _, v = DQN_experiment(actions, (8,8))
+    # pv.extend(v)
+    # _, v = DQN_experiment(actions, (16,16))
+    # pv.extend(v)
 
-    for values in pv:
-        plt.imshow(values, cmap='hot', interpolation='bicubic')
-        plt.show()
-    print("experiment done")
-    # s = Grid()
-    # s.grid_to_graph()
+    # for values in pv:
+    #     plt.imshow(values, cmap='hot', interpolation='bicubic')
+    #     plt.show()
+    # print("experiment done")
+    s = Grid()
+    draw_table(s.cells)
+    nodes = s.grid_to_graph()
+    draw_graph(nodes)

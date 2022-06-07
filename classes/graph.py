@@ -31,6 +31,15 @@ class Node:
         self.regions: List[Region] = []
         self.nodes: Set[Node] = []
 
+    def __str__(self):
+        return self.region_formula_text()
+
+    def __hash__(self):
+        return hash(str(self))
+
+    def __eq__(self, other):
+        return str(self) == str(other)
+
     def add_region(self, region: Region):
         for r in self.regions:
             if r.extend(region) == True:
@@ -38,6 +47,18 @@ class Node:
                 return
 
         self.regions.append(region)
+
+    def region_formula_text(self) -> str:
+        text = ""
+        for region in self.regions:
+            t = f"{region.x_min} < x < {region.x_max} & {region.y_min} < y < {region.y_max}"
+            if len(self.regions) > 1:
+                t = f"({t})"
+            if len(self.regions) - 1 != self.regions.index(region):
+                t += " || \n"
+            text += t
+        return text
+
 
     def prune_regions(self):
         extention_happened = False
