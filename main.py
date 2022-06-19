@@ -23,7 +23,7 @@ def denormalize(state):
     state[1] = state[1] * denormalizers[1]
     return state
 
-def DQN_experiment(actions_xp = None, dimentions = (1,1)):
+def DQN_experiment(actions_xp = None, dimentions = (5,5)):
     actions = []
     action_index = 0
     plot_values = []
@@ -82,9 +82,9 @@ def SafeDQN_experiment():
     pass
 
 if __name__ == "__main__":
-    # pv = []
-    # actions, v = DQN_experiment()
-    # pv.extend(v)
+    pv = []
+    actions, v = DQN_experiment()
+    pv.extend(v)
     # _, v = DQN_experiment(actions, (2,2))
     # pv.extend(v)
     # _, v = DQN_experiment(actions, (4,4))
@@ -94,11 +94,12 @@ if __name__ == "__main__":
     # _, v = DQN_experiment(actions, (16,16))
     # pv.extend(v)
 
-    # for values in pv:
-    #     plt.imshow(values, cmap='hot', interpolation='bicubic')
-    #     plt.show()
-    # print("experiment done")
-    s = Grid()
-    draw_table(s.cells)
-    nodes = s.grid_to_graph()
-    draw_graph(nodes)
+    for values in pv:
+        plt.imshow(values, cmap='hot', interpolation='bicubic')
+        plt.show()
+    print("experiment done")
+
+    # s = Grid()
+    # draw_table(s.cells)
+    # nodes = s.grid_to_graph()
+    # draw_graph(nodes)

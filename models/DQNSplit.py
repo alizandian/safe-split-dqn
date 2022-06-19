@@ -2,10 +2,11 @@ from typing import Iterator, Tuple
 import tensorflow as tf
 import numpy as np
 from keras.models import Model
+from classes.grid import Grid
 
 class DQNSplit(object):
 
-    def __init__(self, input_dim, output_dim, nn_model, dimentions=(1,1), 
+    def __init__(self, input_dim, output_dim, nn_model, dimentions=(5,5), 
                 optimizer = 'adam', loss_function = 'mse', gamma = 1.0, 
                 verbose=False):
 
@@ -13,8 +14,9 @@ class DQNSplit(object):
         self.output_dim = output_dim
 
         # Models are in 2d grid, and each entity is a tuple, first is the main and the second is the target
-        self.x_axis_model_count = dimentions[0]
-        self.y_axis_model_count = dimentions[1]
+        self.x_axis_model_count = 1
+        self.y_axis_model_count = 1
+        self.grid = Grid(dimentions[0], dimentions[1])
         self.models: list[list[tuple[Model, Model]]] = [[(tf.keras.models.clone_model(nn_model), tf.keras.models.clone_model(nn_model)) for j in range(self.y_axis_model_count)] for i in range(self.x_axis_model_count)]
 
         # further parameterisation can be implemented here

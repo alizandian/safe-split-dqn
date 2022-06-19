@@ -1,10 +1,11 @@
 from models.ReplayBuffer import ReplayBuffer
 from models.DQNSplit import DQNSplit
 from models.DQN import DQN
+from classes.visualization import draw_table
 import numpy as np
 
 class AgentSafeDQNSplit(object):
-    def __init__(self, input_dim, output_dim, nn_model, estimator_nn_model, dimentions = (1,1), gamma = 1.0, replay_buffer_size = 500, verbose = False):
+    def __init__(self, input_dim, output_dim, nn_model, estimator_nn_model, dimentions = (5,5), gamma = 1.0, replay_buffer_size = 500, verbose = False):
 
         self.input_dim = input_dim
         self.output_dim = output_dim
@@ -81,6 +82,7 @@ class AgentSafeDQNSplit(object):
 
         return loss, loss_estimator
 
+    count = 0
     # max_degree = -1
     # min_degree = 1
     # max_velocity = -1
@@ -102,6 +104,11 @@ class AgentSafeDQNSplit(object):
         #     AgentSafeDQNSplit.min_velocity = velocity
         #     print(f"min velocity = {AgentSafeDQNSplit.min_velocity}")
 
+        self.estimator_dqn.grid.add_transitions(trans[0], trans[3], trans[4])
+        AgentSafeDQNSplit.count += 1
+
+        #if AgentSafeDQNSplit.count % 100 == 0: draw_table(self.estimator_dqn.grid.cells)
+        
         self.replay_buffer.append(trans)
 
         violation = trans[-1]

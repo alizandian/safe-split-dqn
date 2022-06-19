@@ -1,3 +1,4 @@
+from __future__ import annotations
 from typing import List, Tuple
 from .graph import Node, Region
 
@@ -5,20 +6,60 @@ class Grid:
 
     cells: List[List[int]] = None
 
-    def __init__(self, x = 10, y = 10) -> None:
+    def __init__(self, x = 5, y = 5) -> None:
         self.x = x
         self.y = y
 
         self.cells = [[0 for i in range(self.x)] for j in range(self.y)]
+        self.grids = {} # a dictionary, key is location, value would be another grid 
+        self.transitions = {} # a dictionary, key is a tuple of locations, originating cell and target cell, value is a list of bool, indicating violation
+        self.transitions_full = {}
 
-        for i in range(self.x):
-            for j in range(self.y):
-                if (i <= 2 and j <= 2) or (i >= 7 and j >= 7):
-                    self.cells[j][i] = 1
-                # if (i <= 2):
-                #     self.cells[j][i] = 1
+        # for i in range(self.x):
+        #     for j in range(self.y):
+        #         if (i <= 2 and j <= 2) or (i >= 7 and j >= 7):
+        #             self.cells[j][i] = 1
+        #         # if (i <= 2):
+        #         #     self.cells[j][i] = 1
 
         #print(self.cells)
+    def clamp(self, n, smallest, largest): return max(smallest, min(n, largest))
+
+    def add_transitions(self, state1, state2, violation):
+        """
+        expecting normalized coordinates, between -1 and +1 in each axis
+        violation is a bool, true if it is a system failure, end of trajectory
+        """
+
+        xl = 2.0 / self.x
+        yl = 2.0 / self.y
+
+        x1i = self.clamp(int((state1[0] + 1) / xl), 0, self.x-1)
+        y1i = self.clamp(int((state1[1] + 1) / yl), 0, self.y-1)
+
+        x2i = self.clamp(int((state2[0] + 1) / xl), 0, self.x-1)
+        y2i = self.clamp(int((state2[1] + 1) / yl), 0, self.y-1)
+
+        t = ((x1i, y1i), (x2i, y2i)) 
+
+        if violation: self.cells[x2i][y2i] = 1
+
+        if t not in self.transitions: self.transitions[t] = []
+        if t not in self.transitions_full: self.transitions_full[t] = []
+        self.transitions[t].append(violation)
+        self.transitions_full[t].append((state1, state2, violation))
+
+        if x1i == x2i and y1i == y2i:
+            l = len(self.transitions[t])
+            s = sum(self.transitions[t])
+            
+
+            if len(self.transitions[t]) > 50 and s != 0 and s != l:
+                self.increase_resolution(x1i, y1i)
+
+    def increase_resolution(self, x, y):
+        print(f"INCREASE RESOLUTION at {x}, {y}")
+
 
     def exists(self, location) -> bool:
         if location[0] >= 0 and location[0] < self.x and location[1] >= 0 and location[1] < self.y:
