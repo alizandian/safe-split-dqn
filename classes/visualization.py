@@ -2,6 +2,8 @@ import tkinter
 from typing import List
 from .graph import Node
 
+colors = {-1: "grey", 0: "black", 1:"red", 2:"orange"}
+
 def draw_table(coord: List[List[int]] = [[1,0,0,1], [1,1,1,1], [1,0,0,1]]):
     root = tkinter.Tk()
     min_x, min_y = 0, 0
@@ -14,8 +16,7 @@ def draw_table(coord: List[List[int]] = [[1,0,0,1], [1,1,1,1], [1,0,0,1]]):
             ly = max_y - min_y
             x_unit = lx / len(rows)
             y_unit = ly / len(coord)
-            color = "black" if column == 1 else "yellow"
-            canvas.create_rectangle(x * x_unit, y * y_unit, (x * x_unit) + x_unit, ( y * y_unit) + y_unit, outline="#fb0", fill=color)
+            canvas.create_rectangle(x * x_unit, y * y_unit, (x * x_unit) + x_unit, ( y * y_unit) + y_unit, outline="#fb0", fill=colors[column])
 
     canvas.pack()
     root.mainloop()
@@ -36,8 +37,8 @@ def draw_graph(nodes: List[Node]):
     node_positions = {}
     for i, node in enumerate(nodes):
         node_positions[node] = (x, y_unit * (i+1))
-        canvas.create_oval(x, y_unit * (i+1), x + node_size, y_unit * (i+1) + node_size, fill="blue")
-        canvas.create_text(x * 2, y_unit * (i+1), fill="darkblue",font="Times 20 italic bold", text=node.region_formula_text())
+        canvas.create_oval(x, y_unit * (i+1), x + node_size, y_unit * (i+1) + node_size, fill=colors[node.value])
+        canvas.create_text(x * 2, y_unit * (i+1), fill=colors[node.value], font="Times 20 italic bold", text=node.region_formula_text())
 
     for i, node in enumerate(nodes):
         for n in node.nodes:

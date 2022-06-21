@@ -27,9 +27,10 @@ class Region:
 
 
 class Node:
-    def __init__(self) -> None:
+    def __init__(self, v) -> None:
         self.regions: List[Region] = []
         self.nodes: Set[Node] = []
+        self.value = v
 
     def __str__(self):
         return self.region_formula_text()

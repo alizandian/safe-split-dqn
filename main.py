@@ -7,9 +7,9 @@ from classes.visualization import draw_table, draw_graph
 
 from classes.grid import Grid
 
-MAX_EPISODE = 101
+MAX_EPISODE = 201
 VISUALISATION = True
-PLOT_INTERVAL = 10
+PLOT_INTERVAL = 40
 normalizers=[2.5, 0.5]
 denormalizers=[0.40, 2.0]
 
@@ -98,8 +98,3 @@ if __name__ == "__main__":
         plt.imshow(values, cmap='hot', interpolation='bicubic')
         plt.show()
     print("experiment done")
-
-    # s = Grid()
-    # draw_table(s.cells)
-    # nodes = s.grid_to_graph()
-    # draw_graph(nodes)

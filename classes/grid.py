@@ -1,7 +1,7 @@
 from __future__ import annotations
 from typing import List, Tuple
 from .graph import Node, Region
-
+from classes.visualization import draw_graph, draw_table
 class Grid:
 
     cells: List[List[int]] = None
@@ -14,6 +14,8 @@ class Grid:
         self.grids = {} # a dictionary, key is location, value would be another grid 
         self.transitions = {} # a dictionary, key is a tuple of locations, originating cell and target cell, value is a list of bool, indicating violation
         self.transitions_full = {}
+        self.transitions_from = {}
+        self.transitions_from_full = {}
 
         # for i in range(self.x):
         #     for j in range(self.y):
@@ -40,26 +42,44 @@ class Grid:
         x2i = self.clamp(int((state2[0] + 1) / xl), 0, self.x-1)
         y2i = self.clamp(int((state2[1] + 1) / yl), 0, self.y-1)
 
-        t = ((x1i, y1i), (x2i, y2i)) 
-
-        if violation: self.cells[x2i][y2i] = 1
+        l1 = (x1i, y1i)
+        l2 = (x2i, y2i)
+        t = (l1, l2) 
 
         if t not in self.transitions: self.transitions[t] = []
         if t not in self.transitions_full: self.transitions_full[t] = []
+        if l1 not in self.transitions_from: self.transitions_from[l1] = []
+        if l1 not in self.transitions_from_full: self.transitions_from_full[l1] = []
+
+        transition = (state1, state2, violation)
+
         self.transitions[t].append(violation)
-        self.transitions_full[t].append((state1, state2, violation))
+        self.transitions_full[t].append(transition)
+        self.transitions_from[l1].append(violation)
+        self.transitions_from_full[l1].append(transition)
 
-        if x1i == x2i and y1i == y2i:
-            l = len(self.transitions[t])
-            s = sum(self.transitions[t])
-            
+        l = len(self.transitions_from[l1])
+        s = sum(self.transitions_from[l1])
 
-            if len(self.transitions[t]) > 50 and s != 0 and s != l:
-                self.increase_resolution(x1i, y1i)
+        if l > 40 and s != 0 and s != l:
+            self.cells[x1i][y1i] = -1
+            self.increase_resolution(l1)
+        elif s == 0:
+            self.cells[x1i][y1i] = 0
+        elif s == l:
+            self.cells[x1i][y1i] = 1
+        elif s > 0 and l > 0:
+            self.cells[x1i][y1i] = 2
 
-    def increase_resolution(self, x, y):
-        print(f"INCREASE RESOLUTION at {x}, {y}")
 
+    def increase_resolution(self, location):
+        print(f"INCREASE RESOLUTION at {location}")
+
+
+    def visualize(self):
+        #draw_table(self.cells)
+        nodes = self.grid_to_graph()
+        draw_graph(nodes)
 
     def exists(self, location) -> bool:
         if location[0] >= 0 and location[0] < self.x and location[1] >= 0 and location[1] < self.y:
@@ -97,7 +117,7 @@ class Grid:
                 if l in assigned: continue
                 assigned.append(l)
                 value = self.cells[i][j]
-                node = Node()
+                node = Node(value)
                 nodes.append(node)
                 if len(nodes) > 1:
                     previous_node = nodes[-2]
