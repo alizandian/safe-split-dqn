@@ -1,9 +1,8 @@
+from environments.RoverEnv import RoverEnv
 from models.AgentSafeDQNSplit import AgentSafeDQNSplit
 from models.AgentDQN import AgentDQN
-from environments.FixedCartPoleEnv import FixedCartPoleEnv
 from experiment.nn_config import *
 from matplotlib import pyplot as plt
-from classes.visualization import draw_table, draw_graph
 
 from classes.grid import Grid
 
@@ -28,9 +27,9 @@ def DQN_experiment(actions_xp = None, dimentions = (5,5)):
     action_index = 0
     plot_values = []
 
-    env = FixedCartPoleEnv(seed=100)
-    i_dim, o_dim, DQN_nn = SimplifiedCartPole_DQN_NN()
-    i_dim, o_dim, ES_DQN_nn = Smaller8x_SimplifiedCartPole_DQN_NN()
+    env = RoverEnv(seed=100)
+    i_dim, o_dim, DQN_nn = SimplifiedCartPole_DQN_NN(2,4)
+    i_dim, o_dim, ES_DQN_nn = Smaller8x_SimplifiedCartPole_DQN_NN(2,4)
     agent = AgentSafeDQNSplit(i_dim, o_dim, DQN_nn, ES_DQN_nn, dimentions=dimentions)
 
     rewards = []

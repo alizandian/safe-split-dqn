@@ -1,9 +1,7 @@
 import tensorflow as tf
 import numpy as np
 
-def SimplifiedCartPole_DQN_NN():
-    input_dim = 2
-    output_dim = 2
+def SimplifiedCartPole_DQN_NN(input_dim=2, output_dim=2):
     initializer = tf.keras.initializers.RandomNormal(mean=0.0, stddev=0.5, seed=np.random.randint(1000))
 
     inputs = tf.keras.Input(shape=(input_dim,))
@@ -14,9 +12,7 @@ def SimplifiedCartPole_DQN_NN():
 
     return input_dim, output_dim, model
 
-def Smaller8x_SimplifiedCartPole_DQN_NN():
-    input_dim = 2
-    output_dim = 2
+def Smaller8x_SimplifiedCartPole_DQN_NN(input_dim=2, output_dim=2):
     initializer = tf.keras.initializers.RandomNormal(mean=0.0, stddev=0.5, seed=np.random.randint(1000))
 
     inputs = tf.keras.Input(shape=(input_dim,))

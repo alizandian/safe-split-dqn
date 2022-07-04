@@ -68,7 +68,9 @@ class Grid:
             self.cells[x1i][y1i] = 0
         elif s == l:
             self.cells[x1i][y1i] = 1
-        elif s > 0 and l > 0:
+        elif s > 0 and l > 0 and s/l > 0.2:
+            self.cells[x1i][y1i] = 1
+        else:
             self.cells[x1i][y1i] = 2
 
 
@@ -109,6 +111,7 @@ class Grid:
         return ns
 
     def grid_to_graph(self) -> List[Node]:
+        Node.index = 0
         nodes: List[Node] = []
         assigned = []
         for i in range(self.x):

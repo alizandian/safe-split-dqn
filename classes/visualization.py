@@ -1,4 +1,6 @@
 import tkinter
+import matplotlib.pyplot as plt
+import networkx as nx
 from typing import List
 from .graph import Node
 
@@ -22,6 +24,29 @@ def draw_table(coord: List[List[int]] = [[1,0,0,1], [1,1,1,1], [1,0,0,1]]):
     root.mainloop()
 
 def draw_graph(nodes: List[Node]):
+    graph_edges = []
+    graph_nodes = []
+    edges_labels = {}
+    labels = {}
+    for index, node in enumerate(nodes):
+        values = {0:"SAFE", 1:"UNSAFE", 2:"UNSURE", -1:"INCREASE RESOLUTION!"}
+        graph_nodes.append(node.i)
+        labels[index] = values[node.value]
+        for n in node.nodes:
+            graph_edges.append((node.i, n.i))
+            edges_labels[(node.i, n.i)] = n.region_formula_text()
+
+    G = nx.Graph()
+    G.add_nodes_from(graph_nodes)
+    G.add_edges_from(graph_edges)
+    pos = nx.spring_layout(G)
+    plt.figure()
+    nx.draw(G, pos, edge_color='black', width=1, linewidths=1, node_color='pink', alpha=0.9, labels=labels)
+    nx.draw_networkx_edge_labels(G, pos, edge_labels=edges_labels, font_color='red')
+    plt.axis('off')
+    plt.show()
+
+def draw_graph_basic(nodes: List[Node]):
     root = tkinter.Tk()
     min_x, min_y = 0, 0
     max_x, max_y = 500, 500
