@@ -107,7 +107,7 @@ class AgentSafeDQNSplit(object):
         self.estimator_dqn.grid.add_transitions(trans[0], trans[3], trans[4])
         AgentSafeDQNSplit.count += 1
 
-        if AgentSafeDQNSplit.count % 50 == 0: self.estimator_dqn.grid.visualize()
+        if AgentSafeDQNSplit.count % 200 == 0: self.estimator_dqn.grid.visualize()
         
         self.replay_buffer.append(trans)
 

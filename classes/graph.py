@@ -1,94 +1,158 @@
 from __future__ import annotations
-from typing import List, Set
+from typing import List, Tuple
+from .node import Node, Region
+from classes.visualization import draw_graph, draw_table, draw_graph_grid
+class Graph:
 
-class Region:
-    def __init__(self, x_min, x_max, y_min, y_max) -> None:
-        self.x_min = x_min
-        self.x_max = x_max
-        self.y_min = y_min
-        self.y_max = y_max
+    cells: List[List[int]] = None
 
-    def extend(self, region: Region):
-        if self.x_min == region.x_min and self.x_max == region.x_max:
-            if self.y_min == region.y_max:
-                self.y_min = region.y_min
-                return True
-            elif self.y_max == region.y_min:
-                self.y_max = region.y_max
-                return True
-        elif self.y_min == region.y_min and self.y_max == region.y_max:
-            if self.x_min == region.x_max:
-                self.x_min = region.x_min
-                return True
-            elif self.x_max == region.x_min:
-                self.x_max = region.x_max
-                return True
+    def __init__(self, x = 5, y = 5) -> None:
+        self.x = x
+        self.y = y
+
+        self.cells = [[0 for i in range(self.x)] for j in range(self.y)]
+        self.grids = {} # a dictionary, key is location, value would be another grid 
+        self.transitions = {} # a dictionary, key is a tuple of locations, originating cell and target cell, value is a list of bool, indicating violation
+        self.transitions_full = {}
+        self.transitions_from = {}
+        self.transitions_from_full = {}
+
+        # for i in range(self.x):
+        #     for j in range(self.y):
+        #         if (i <= 2 and j <= 2) or (i >= 7 and j >= 7):
+        #             self.cells[j][i] = 1
+        #         # if (i <= 2):
+        #         #     self.cells[j][i] = 1
+
+        #print(self.cells)
+    def clamp(self, n, smallest, largest): return max(smallest, min(n, largest))
+
+    def add_transitions(self, state1, state2, violation):
+        """
+        expecting normalized coordinates, between -1 and +1 in each axis
+        violation is a bool, true if it is a system failure, end of trajectory
+        """
+
+        xl = 2.0 / self.x
+        yl = 2.0 / self.y
+
+        x1i = self.clamp(int((state1[0] + 1) / xl), 0, self.x-1)
+        y1i = self.clamp(int((state1[1] + 1) / yl), 0, self.y-1)
+
+        x2i = self.clamp(int((state2[0] + 1) / xl), 0, self.x-1)
+        y2i = self.clamp(int((state2[1] + 1) / yl), 0, self.y-1)
+
+        l1 = (x1i, y1i)
+        l2 = (x2i, y2i)
+        t = (l1, l2) 
+
+        if t not in self.transitions: self.transitions[t] = []
+        if t not in self.transitions_full: self.transitions_full[t] = []
+        if l1 not in self.transitions_from: self.transitions_from[l1] = []
+        if l1 not in self.transitions_from_full: self.transitions_from_full[l1] = []
+
+        transition = (state1, state2, violation)
+
+        self.transitions[t].append(violation)
+        self.transitions_full[t].append(transition)
+        self.transitions_from[l1].append(violation)
+        self.transitions_from_full[l1].append(transition)
+
+        l = len(self.transitions_from[l1])
+        s = sum(self.transitions_from[l1])
+
+        if l > 40 and s != 0 and s != l:
+            self.cells[x1i][y1i] = -1
+            self.increase_resolution(l1)
+        elif s == 0:
+            self.cells[x1i][y1i] = 0
+        elif s == l:
+            self.cells[x1i][y1i] = 1
+        elif s > 0 and l > 0 and s/l > 0.2:
+            self.cells[x1i][y1i] = 1
+        else:
+            self.cells[x1i][y1i] = 1
+
+
+    def increase_resolution(self, location):
+        print(f"INCREASE RESOLUTION at {location}")
+
+
+    def visualize(self):
+        #draw_table(self.cells)
+        nodes = self.grid_to_graph()
+        draw_graph(nodes)
+        draw_graph_grid(nodes, (self.x, self.y))
+
+
+    def exists(self, location) -> bool:
+        if location[0] >= 0 and location[0] < self.x and location[1] >= 0 and location[1] < self.y:
+            return True
         return False
 
+    def get_neighburs(self, location, radius=1) -> List[Tuple]:
+        ns = []
 
-class Node:
-    index = 0
-    def __init__(self, v) -> None:
-        self.regions: List[Region] = []
-        self.nodes: Set[Node] = []
-        self.value = v
-        self.i = Node.index
-        Node.index += 1
+        x, y = location
+        # right and left sides
+        for n in range((radius * 2) + 1):
+            offset = n - radius
+            l1 = (x + radius, y + offset)
+            l2 = (x - radius, y + offset)
+            if self.exists(l1): ns.append(l1)
+            if self.exists(l2): ns.append(l2)
+        
+        # top and bottom sides
+        for n in range((radius * 2) - 1):
+            offset = n - radius + 1
+            l1 = (x + offset, y + radius)
+            l2 = (x + offset, y - radius)
+            if self.exists(l1): ns.append(l1)
+            if self.exists(l2): ns.append(l2)
 
-    def __str__(self):
-        return self.region_formula_text()
+        return ns
 
-    def __hash__(self):
-        return hash(str(self))
+    def grid_to_graph(self) -> List[Node]:
+        Node.index = 0
+        nodes: List[Node] = []
+        assigned = []
+        for i in range(self.x):
+            for j in range(self.y):
+                l = (i, j)
+                if l in assigned: continue
+                assigned.append(l)
+                value = self.cells[i][j]
+                node = Node(value)
+                nodes.append(node)
+                if len(nodes) > 1:
+                    previous_node = nodes[-2]
+                    current_node = nodes[-1]
+                    previous_node.add_node(current_node)
+                    current_node.add_node(previous_node)
+                node.add_region(Region(j, j+1, i, i+1))
 
-    def __eq__(self, other):
-        return str(self) == str(other)
+                ns = self.get_neighburs(l)
+                while len(ns) != 0:
+                    ns = list(dict.fromkeys(ns))
+                    ns = [(x,y) for x,y in ns if value == self.cells[x][y]]
 
-    def add_region(self, region: Region):
-        for r in self.regions:
-            if r.extend(region) == True:
-                self.prune_regions()
-                return
+                    new_ns = []
+                    for (x, y) in ns:
+                        if (x,y) not in assigned:
+                            node.add_region(Region(y, y+1, x, x+1))
+                            assigned.append((x,y))
 
-        self.regions.append(region)
-
-    def region_formula_text(self) -> str:
-        text = ""
-        for region in self.regions:
-            t = f"{region.x_min} < x < {region.x_max} & {region.y_min} < y < {region.y_max}"
-            if len(self.regions) > 1:
-                t = f"({t})"
-            if len(self.regions) - 1 != self.regions.index(region):
-                t += " || \n"
-            text += t
-        return text
+                        neighburs = self.get_neighburs((x, y))
+                        neighburs = [n for n in neighburs if n not in assigned]
+                        new_ns.extend(neighburs)
+                    ns = new_ns
+                    
+        return nodes
 
 
-    def prune_regions(self):
-        extention_happened = False
-        new_regions = []
-        while len(self.regions) != 0:
-            region = self.regions.pop()
 
-            for r in self.regions:
-                if region.extend(r) == True:
-                    self.regions.remove(r)
-                    extention_happened = True
-                    break
 
-            new_regions.append(region)
-            
-        self.regions = new_regions
 
-        if extention_happened:
-            self.prune_regions()
 
-    def add_node(self, node: Node):
-        if node not in self.nodes:
-            self.nodes.append(node)
 
-    def merge(self, node: Node) -> Node:
-        self.nodes.union(node.nodes)
-        self.regions.extend(node.regions)
-        self.prune_regions()
-        return self
+

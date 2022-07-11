@@ -4,13 +4,16 @@ from models.AgentDQN import AgentDQN
 from experiment.nn_config import *
 from matplotlib import pyplot as plt
 
-from classes.grid import Grid
+from classes.graph import Graph
 
 MAX_EPISODE = 201
 VISUALISATION = True
-PLOT_INTERVAL = 40
-normalizers=[2.5, 0.5]
-denormalizers=[0.40, 2.0]
+PLOT_INTERVAL = 20
+# for FixedCartPole
+# normalizers=[2.5, 0.5]
+# denormalizers=[0.40, 2.0]
+normalizers=[0.01, 0.01]
+denormalizers=[100, 100]
 
 def normalize(state):
     state[0] = state[0] * normalizers[0]
@@ -22,7 +25,7 @@ def denormalize(state):
     state[1] = state[1] * denormalizers[1]
     return state
 
-def DQN_experiment(actions_xp = None, dimentions = (5,5)):
+def DQN_experiment(actions_xp = None, dimentions = (8,8)):
     actions = []
     action_index = 0
     plot_values = []
@@ -59,17 +62,26 @@ def DQN_experiment(actions_xp = None, dimentions = (5,5)):
                 break
 
         if i % PLOT_INTERVAL == 0 and i != 0:
-            values = [[0]*10 for i in range(10)]
-            for degree in range(10):
-                for velocity in range(10):
-                    next_state[0] = ((degree - 5) / 5) 
-                    next_state[1] = ((velocity - 5) / 5)
+            reso = 10
+            error = 0
+            values = [[0]*reso for i in range(reso)]
+            for x in range(reso):
+                for y in range(reso):
+                    next_state[0] = ((x - reso/2) / reso/2) 
+                    next_state[1] = ((y - reso/2) / reso/2)
                     s = np.stack([next_state])
                     v = agent.estimator_dqn.get_model(next_state)[1].predict(s)
                     #v = agent.dqn.Q_target.predict(s)
-                    values[degree][9-velocity] = np.max(v)
+                    value = np.max(v)
+                    values[x][reso-1-y] = value
+                    violation = env.check_violation_solution(denormalize(next_state))
+                    value_estimation = 1 if value < 0.1 else 0
+                    if violation != value_estimation: error += 1
 
             plot_values.append(values)
+            print(f"Accuracy: {100 - (error / reso * reso)}")
+            plt.imshow(values, cmap='hot', interpolation='bicubic')
+            plt.show()
 
         rewards.append(episode_reward) 
         print("Episode {0}/{1} -- reward {2}".format(i+1, MAX_EPISODE, episode_reward)) 

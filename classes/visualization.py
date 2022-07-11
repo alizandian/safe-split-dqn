@@ -2,7 +2,7 @@ import tkinter
 import matplotlib.pyplot as plt
 import networkx as nx
 from typing import List
-from .graph import Node
+from .node import Node
 
 colors = {-1: "grey", 0: "black", 1:"red", 2:"orange"}
 
@@ -45,6 +45,28 @@ def draw_graph(nodes: List[Node]):
     nx.draw_networkx_edge_labels(G, pos, edge_labels=edges_labels, font_color='red')
     plt.axis('off')
     plt.show()
+
+def draw_graph_grid(nodes: List[Node], grid_dimention):
+    root = tkinter.Tk()
+    min_x, min_y = 0, 0
+    max_x, max_y = 500, 500
+    node_size = 20
+    canvas = tkinter.Canvas(root, bg="white", height=max_x, width=max_y)
+
+    lx = max_x - min_x
+    ly = max_y - min_y
+    gx, gy = grid_dimention
+    xu = lx / gx
+    yu = ly / gy
+
+
+    for index, node in enumerate(nodes):
+        for r in node.regions:
+            canvas.create_rectangle(r.x_min * xu, r.y_min* yu, r.x_max * xu, r.y_max * yu, fill=colors[node.value])
+
+    canvas.pack()
+    root.mainloop()
+
 
 def draw_graph_basic(nodes: List[Node]):
     root = tkinter.Tk()

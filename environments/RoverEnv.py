@@ -23,10 +23,10 @@ class RoverEnv(gym.Env):
     Actions:
         Type: Discrete(4)
         Num   Action
-        0     Move BOTTOM a random amount between 2 and 10
-        1     Move LEFT a random amount between 2 and 10
-        3     Move RIGHT a random amount between 2 and 10
-        4     Move TOP a random amount between 2 and 10
+        0     Move BOTTOM a random amount between 15 and 25
+        1     Move LEFT a random amount between 15 and 25
+        3     Move RIGHT a random amount between 15 and 25
+        4     Move TOP a random amount between 15 and 25
 
     Reward:
         Reward is 1 for every step taken.
@@ -44,14 +44,27 @@ class RoverEnv(gym.Env):
         self.max = 100
         self.min = -100
         self.action_space = spaces.Discrete(4)
-        self.observation_space = spaces.Box(-100, 100, (2,), dtype=np.float32)
+        self.observation_space = spaces.Box(self.min, self.max, (2,), dtype=np.float32)
         self.seed(seed)
         self.viewer = None
         self.state = None
         self.steps_beyond_done = None
         self.step_count = 0
         # MIN X MIN Y MAX X MAX Y
-        self.unsafe_areas = [(-70, -70, -20, -20), (60, 50, 70, 60), (-100, 60, -80, 100)]
+        self.unsafe_areas = [
+            (-70, -70, -45, -45), 
+            (50, 30, 100, 80), 
+            (-100, 80, -80, 100)
+            ]
+        self.unsafe_areas_perfect = [
+            (-100, -100, -20, -20),
+            (25, 5, 100, 100),
+            (-100, 55, -55, 100),
+            (-100, -100, -75, 100), 
+            (-100, -100, 100, -75), 
+            (-100, 75, 100, 100), 
+            (75, -100, 100, 100)
+            ]
         self.rendering_size = 600
         self.rendering_scale = self.rendering_size / (self.max - self.min)
 
@@ -65,7 +78,17 @@ class RoverEnv(gym.Env):
             if x >= minx and x <= maxx and y >= miny and y <= maxy:
                 return True
 
-        if x < -100 or x > 100 or y < -100 or y > 100:
+        if x < self.min or x > self.max or y < self.min or y > self.max:
+            return True
+        return False
+        
+    def check_violation_solution(self, state):
+        x, y = state
+        for minx, miny, maxx, maxy in self.unsafe_areas_perfect:
+            if x >= minx and x <= maxx and y >= miny and y <= maxy:
+                return True
+
+        if x < self.min or x > self.max or y < self.min or y > self.max:
             return True
         return False
             
@@ -73,13 +96,13 @@ class RoverEnv(gym.Env):
     def move(self, action, state):
         x, y = state
 
-        r = random.uniform(2.0, 10.0)
+        r = random.uniform(15.0, 25.0)
 
         # 0 bot, 1 left,  2 right, 3 top
         if action == 0: y -= r
         elif action == 1: x -= r
         elif action == 2: x += r
-        else: x -= r
+        else: y += r
 
         return (x,y)
 
