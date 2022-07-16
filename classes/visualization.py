@@ -6,6 +6,9 @@ from .node import Node
 
 colors = {-1: "grey", 0: "black", 1:"red", 2:"orange"}
 
+tk_root_table = None
+tk_root_graph = None
+
 def draw_table(coord: List[List[int]] = [[1,0,0,1], [1,1,1,1], [1,0,0,1]]):
     root = tkinter.Tk()
     min_x, min_y = 0, 0
@@ -62,7 +65,7 @@ def draw_graph_grid(nodes: List[Node], grid_dimention):
 
     for index, node in enumerate(nodes):
         for r in node.regions:
-            canvas.create_rectangle(r.x_min * xu, r.y_min* yu, r.x_max * xu, r.y_max * yu, fill=colors[node.value])
+            canvas.create_rectangle(r.x_min*xu, max_y - r.y_min*yu, r.x_max*xu, max_y - r.y_max*yu, fill=colors[node.value])
 
     canvas.pack()
     root.mainloop()

@@ -63,6 +63,8 @@ class Node:
             text += t
         return text
 
+    def distance(self, x, y):
+        pass
 
     def prune_regions(self):
         extention_happened = False

@@ -9,23 +9,27 @@ class Graph:
     def __init__(self, x = 5, y = 5) -> None:
         self.x = x
         self.y = y
-
-        self.cells = [[0 for i in range(self.x)] for j in range(self.y)]
-        self.grids = {} # a dictionary, key is location, value would be another grid 
+        self.nodes: List[Node] = []
+        self.transition_count = 0
         self.transitions = {} # a dictionary, key is a tuple of locations, originating cell and target cell, value is a list of bool, indicating violation
         self.transitions_full = {}
         self.transitions_from = {}
         self.transitions_from_full = {}
+        self.update_interval = 200
+        self.visualization = False
+        self.cells = [[0 for i in range(self.x)] for j in range(self.y)]
+        self.grids = {} # a dictionary, key is location, value would be another grid 
 
-        # for i in range(self.x):
-        #     for j in range(self.y):
-        #         if (i <= 2 and j <= 2) or (i >= 7 and j >= 7):
-        #             self.cells[j][i] = 1
-        #         # if (i <= 2):
-        #         #     self.cells[j][i] = 1
 
-        #print(self.cells)
     def clamp(self, n, smallest, largest): return max(smallest, min(n, largest))
+
+    def fill_sample(self):
+        for i in range(self.x):
+            for j in range(self.y):
+                if (i <= 2 and j <= 2) or (i >= 7 and j >= 7):
+                    self.cells[j][i] = 1
+                if (i <= 2):
+                    self.cells[j][i] = 1
 
     def add_transitions(self, state1, state2, violation):
         """
@@ -57,6 +61,7 @@ class Graph:
         self.transitions_full[t].append(transition)
         self.transitions_from[l1].append(violation)
         self.transitions_from_full[l1].append(transition)
+        self.transition_count += 1
 
         l = len(self.transitions_from[l1])
         s = sum(self.transitions_from[l1])
@@ -73,17 +78,24 @@ class Graph:
         else:
             self.cells[x1i][y1i] = 1
 
+        if self.transition_count % self.update_interval == 0: 
+            self.update_nodes()
+            if self.visualization: self.visualize()
+
+
+    def proximity(self, transition):
+        s, a, r, n, d = transition
+        if d == True: return 0
+        D = 2
 
     def increase_resolution(self, location):
         print(f"INCREASE RESOLUTION at {location}")
 
-
     def visualize(self):
         #draw_table(self.cells)
-        nodes = self.grid_to_graph()
+        nodes = self.update_nodes()
         draw_graph(nodes)
         draw_graph_grid(nodes, (self.x, self.y))
-
 
     def exists(self, location) -> bool:
         if location[0] >= 0 and location[0] < self.x and location[1] >= 0 and location[1] < self.y:
@@ -112,7 +124,7 @@ class Graph:
 
         return ns
 
-    def grid_to_graph(self) -> List[Node]:
+    def update_nodes(self) -> List[Node]:
         Node.index = 0
         nodes: List[Node] = []
         assigned = []

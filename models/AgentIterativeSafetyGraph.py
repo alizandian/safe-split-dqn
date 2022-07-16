@@ -1,6 +1,7 @@
 from classes.graph import Graph
 from models.ReplayBuffer import ReplayBuffer
 from models.DQN import DQN
+from typing import List, Tuple
 import numpy as np
 
 class AgentIterativeSafetyGraph(object):
@@ -22,7 +23,7 @@ class AgentIterativeSafetyGraph(object):
         self.safety_graph = Graph(dimentions[0], dimentions[1])
 
 
-    def get_action(self, input, theta = 0.0):
+    def get_action(self, input, theta = -8.0):
         q_val = self.dqn.get_q_values(np.array(input)[np.newaxis])[0]
         mask = [ 1 if val >= theta else 0 for val in q_val]
         final_action_q_val = [ q * m for q, m in zip(q_val, mask) ]
@@ -46,8 +47,12 @@ class AgentIterativeSafetyGraph(object):
                 self.previous_action_type = 1
             return np.argmax(final_action_q_val)
 
+    def manipulate_transitions(self, transitions: List[Tuple]):
+        manipulated_transitions = [[s,a, -10 if d == True else r,n,d] for s,a,r,n,d in transitions]
+        return manipulated_transitions
+
     def train(self):
-        transitions = list(self.transition_buffer.get_buffer())
+        transitions = self.manipulate_transitions(list(self.transition_buffer.get_buffer()))
         loss = self.dqn.learn(transitions, len(self.transition_buffer))
         self.dqn.update_q_target()
         self.update_counter = 0
@@ -58,10 +63,6 @@ class AgentIterativeSafetyGraph(object):
     def add_transition(self, trans):
         self.transition_buffer.append(trans)
         self.safety_graph.add_transitions(trans[0], trans[3], trans[4])
-
-        AgentIterativeSafetyGraph.count += 1
-        if AgentIterativeSafetyGraph.count % 200 == 0: self.estimator_dqn.grid.visualize()
-
 
     def random_action(self):
         return np.random.randint(self.output_dim)
