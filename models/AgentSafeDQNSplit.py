@@ -104,7 +104,6 @@ class AgentSafeDQNSplit(object):
         #     AgentSafeDQNSplit.min_velocity = velocity
         #     print(f"min velocity = {AgentSafeDQNSplit.min_velocity}")
 
-        self.estimator_dqn.grid.add_transitions(trans[0], trans[3], trans[4])
         AgentSafeDQNSplit.count += 1
 
         self.replay_buffer.append(trans)

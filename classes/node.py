@@ -25,6 +25,12 @@ class Region:
                 return True
         return False
 
+    def is_adjacent(self, region: Region):
+        if (((self.x_max == region.x_min or self.x_min == region.x_max) and (region.y_max >= self.y_min and region.y_min <= self.y_max)) or 
+            (self.y_max == region.y_min or self.y_min == region.y_max) and (region.x_max >= self.x_min and region.x_min <= self.x_max)):
+            return True
+        return False
+
 
 class Node:
     index = 0
@@ -52,6 +58,14 @@ class Node:
 
         self.regions.append(region)
 
+    def is_adjacent(self, node:Node):
+        for r1 in self.regions:
+            for r2 in node.regions:
+                if r1.is_adjacent(r2):
+                    return True
+        return False
+
+
     def region_formula_text(self) -> str:
         text = ""
         for region in self.regions:
@@ -62,9 +76,6 @@ class Node:
                 t += " || \n"
             text += t
         return text
-
-    def distance(self, x, y):
-        pass
 
     def prune_regions(self):
         extention_happened = False

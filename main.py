@@ -6,9 +6,9 @@ from matplotlib import pyplot as plt
 from typing import Dict, Tuple
 
 
-MAX_EPISODE = 5
+MAX_EPISODE = 51
 VISUALISATION = True
-PLOT_INTERVAL = 2
+PLOT_INTERVAL = 10
 plot_values: Dict[str, Dict[int, Tuple[list, float]]] = {} # values and accurace (tuple) of each episode (second dict) of each experiment (first dict).
 # for FixedCartPole
 # normalizers=[2.5, 0.5]
@@ -26,22 +26,22 @@ def denormalize(state):
     state[1] = state[1] * denormalizers[1]
     return state
 
-def experiment_AgentSafeDQNSplit(actions_xp = None, dimentions = (8,8)):
+def experiment_AgentSafeDQNSplit(predefined_actions = None):
     env = RoverEnv(seed=100)
     i_dim, o_dim, DQN_nn = SimplifiedCartPole_DQN_NN(2,4)
     i_dim, o_dim, ES_DQN_nn = Smaller8x_SimplifiedCartPole_DQN_NN(2,4)
-    agent = AgentSafeDQNSplit(i_dim, o_dim, DQN_nn, ES_DQN_nn, dimentions=dimentions)
-    actions, rewards = run_experiment("split", actions_xp, agent, env)
+    agent = AgentSafeDQNSplit(i_dim, o_dim, DQN_nn, ES_DQN_nn)
+    actions, rewards = run_experiment("split", predefined_actions, agent, env)
     return actions
 
-def experiment_AgentIterativeSafetyGraph(actions_xp = None, dimentions = (8,8)):
+def experiment_AgentIterativeSafetyGraph(predefined_actions = None):
     env = RoverEnv(seed=100)
     i_dim, o_dim, DQN_nn = SimplifiedCartPole_DQN_NN(2,4)
-    agent = AgentIterativeSafetyGraph(i_dim, o_dim, DQN_nn, dimentions=dimentions)
-    actions, rewards = run_experiment("iterative", actions_xp, agent, env)
+    agent = AgentIterativeSafetyGraph(i_dim, o_dim, DQN_nn, (10,10))
+    actions, rewards = run_experiment("iterative", predefined_actions, agent, env)
     return actions
 
-def run_experiment(experiment_name, actions_xp, agent, env):
+def run_experiment(experiment_name, predefined_actions, agent, env):
     print(f"Running Experimen {experiment_name}") 
     action_index = 0
     actions = []
@@ -52,8 +52,8 @@ def run_experiment(experiment_name, actions_xp, agent, env):
 
         while True:
             action = None
-            if actions_xp != None and action_index < len(actions_xp):
-                action = actions_xp[action_index]
+            if predefined_actions != None and action_index < len(predefined_actions):
+                action = predefined_actions[action_index]
             else:
                 action = agent.get_action(state)
                 actions.append(action)
@@ -86,9 +86,10 @@ def record(experiment, episode, agent, env, state):
             s = np.stack([state])
             v = agent.dqn.Q_target.predict(s)
             value = np.max(v)
+            tvalue = np.min(v)
             values[x][reso-1-y] = value
             violation = env.check_violation_solution(denormalize(state))
-            value_estimation = 1 if value < 0.1 else 0
+            value_estimation = 1 if tvalue < -2 else 0
             if violation != value_estimation: error += 1
 
     accuracy = 100 - (error / reso * reso)
@@ -96,7 +97,7 @@ def record(experiment, episode, agent, env, state):
     plot_values[experiment][episode] = (values, accuracy)
 
 def plot():
-    if len(plot_values.keys()) == 0:
+    if len(plot_values.keys()) == 1:
         for experiment in plot_values.keys():
             for episode, (values, accuracy) in plot_values[experiment].items():
                 plt.imshow(values, cmap='hot', interpolation='bicubic')
@@ -119,5 +120,5 @@ def plot():
 
 if __name__ == "__main__":
     actions = experiment_AgentIterativeSafetyGraph()
-    experiment_AgentSafeDQNSplit(actions_xp=actions)
+    actions = experiment_AgentSafeDQNSplit(predefined_actions=actions)
     plot()

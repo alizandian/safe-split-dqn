@@ -3,13 +3,15 @@ from models.ReplayBuffer import ReplayBuffer
 from models.DQN import DQN
 from typing import List, Tuple
 import numpy as np
+import configparser
 
 class AgentIterativeSafetyGraph(object):
-    def __init__(self, input_dim, output_dim, nn_model, dimentions = (5,5), gamma = 1.0, replay_buffer_size = 200, verbose = False):
+    def __init__(self, input_dim, output_dim, nn_model, gamma = 1.0, replay_buffer_size = 200, verbose = False):
+        config = configparser.ConfigParser()
+        config.read('config.ini')
 
         self.input_dim = input_dim
         self.output_dim = output_dim
-
         self.epsilon = 1.0
         self.epsilon_min = 0.1
         self.epsilon_max = 1.0
@@ -20,13 +22,13 @@ class AgentIterativeSafetyGraph(object):
         self.previous_action_type = -1
         self.transition_buffer = ReplayBuffer(replay_buffer_size)
         self.dqn = DQN(input_dim = input_dim, output_dim = output_dim, nn_model = nn_model, gamma = gamma, verbose = verbose)
-        self.safety_graph = Graph(dimentions[0], dimentions[1])
+        self.safety_graph = Graph(int(config["Paremeters"]["dimentions"]), (-1, -1), (1, 1))
 
 
     def get_action(self, input, theta = -8.0):
         q_val = self.dqn.get_q_values(np.array(input)[np.newaxis])[0]
         mask = [ 1 if val >= theta else 0 for val in q_val]
-        final_action_q_val = [ q * m for q, m in zip(q_val, mask) ]
+        final_action_q_val = [ q * m for q, m in zip(q_val, mask)]
 
         if mask.count(1) == 0: return np.argmax(q_val)
 
@@ -36,14 +38,14 @@ class AgentIterativeSafetyGraph(object):
         
         if self.frame_count < self.epsilon_random_frames or self.epsilon > np.random.rand(1)[0]:
             if self.previous_action_type != 0: 
-                print("--------------------------RANDOM---------------------------")
+                print("------------------------  RANDOM  -------------------------")
                 self.previous_action_type = 0
             valid_actions = [ i for i, x in enumerate(mask) if x == 1]
             return np.random.choice(valid_actions)
 
         else:
             if self.previous_action_type != 1: 
-                print("--------------------------CHOSE----------------------------")
+                print("------------------------  CHOSE  -------------------------")
                 self.previous_action_type = 1
             return np.argmax(final_action_q_val)
 
