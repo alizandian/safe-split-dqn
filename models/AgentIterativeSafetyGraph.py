@@ -59,6 +59,7 @@ class AgentIterativeSafetyGraph(object):
         self.dqn.update_q_target()
         self.update_counter = 0
         self.transition_buffer.clear()
+        #self.safety_graph.visualize()
 
         return loss
 

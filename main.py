@@ -6,9 +6,9 @@ from matplotlib import pyplot as plt
 from typing import Dict, Tuple
 
 
-MAX_EPISODE = 51
+MAX_EPISODE = 21
 VISUALISATION = True
-PLOT_INTERVAL = 10
+PLOT_INTERVAL = 5
 plot_values: Dict[str, Dict[int, Tuple[list, float]]] = {} # values and accurace (tuple) of each episode (second dict) of each experiment (first dict).
 # for FixedCartPole
 # normalizers=[2.5, 0.5]
@@ -37,7 +37,7 @@ def experiment_AgentSafeDQNSplit(predefined_actions = None):
 def experiment_AgentIterativeSafetyGraph(predefined_actions = None):
     env = RoverEnv(seed=100)
     i_dim, o_dim, DQN_nn = SimplifiedCartPole_DQN_NN(2,4)
-    agent = AgentIterativeSafetyGraph(i_dim, o_dim, DQN_nn, (10,10))
+    agent = AgentIterativeSafetyGraph(i_dim, o_dim, DQN_nn)
     actions, rewards = run_experiment("iterative", predefined_actions, agent, env)
     return actions
 
@@ -81,15 +81,15 @@ def record(experiment, episode, agent, env, state):
     values = [[0]*reso for i in range(reso)]
     for x in range(reso):
         for y in range(reso):
-            state[0] = ((x - reso/2) / reso/2) 
-            state[1] = ((y - reso/2) / reso/2)
+            r = reso/2
+            state[0] = ((x - r) / r) 
+            state[1] = ((y - r) / r)
             s = np.stack([state])
             v = agent.dqn.Q_target.predict(s)
             value = np.max(v)
-            tvalue = np.min(v)
             values[x][reso-1-y] = value
             violation = env.check_violation_solution(denormalize(state))
-            value_estimation = 1 if tvalue < -2 else 0
+            value_estimation = True if value < 5 else False
             if violation != value_estimation: error += 1
 
     accuracy = 100 - (error / reso * reso)

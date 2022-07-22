@@ -33,12 +33,11 @@ class Graph:
         pass
 
     def add_transitions(self, state1, state2, violation):
+        x1i = self.clamp(int((state1[0] - self.mins[0]) / self.len * self.dimention), 0, self.dimention-1)
+        y1i = self.clamp(int((state1[1] - self.mins[1]) / self.len * self.dimention), 0, self.dimention-1)
 
-        x1i = self.clamp(int((state1[0] - self.mins[0]) / self.len), 0, self.dimention-1)
-        y1i = self.clamp(int((state1[1] - self.mins[1]) / self.len), 0, self.dimention-1)
-
-        x2i = self.clamp(int((state2[0] - self.mins[0]) / self.len), 0, self.dimention-1)
-        y2i = self.clamp(int((state2[1] - self.mins[1]) / self.len), 0, self.dimention-1)
+        x2i = self.clamp(int((state2[0] - self.mins[0]) / self.len * self.dimention), 0, self.dimention-1)
+        y2i = self.clamp(int((state2[1] - self.mins[1]) / self.len * self.dimention), 0, self.dimention-1)
 
         l1 = (x1i, y1i)
         l2 = (x2i, y2i)
