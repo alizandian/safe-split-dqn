@@ -6,9 +6,9 @@ from matplotlib import pyplot as plt
 from typing import Dict, Tuple
 
 
-MAX_EPISODE = 21
+MAX_EPISODE = 101
 VISUALISATION = True
-PLOT_INTERVAL = 5
+PLOT_INTERVAL = 50
 plot_values: Dict[str, Dict[int, Tuple[list, float]]] = {} # values and accurace (tuple) of each episode (second dict) of each experiment (first dict).
 # for FixedCartPole
 # normalizers=[2.5, 0.5]
@@ -30,14 +30,14 @@ def experiment_AgentSafeDQNSplit(predefined_actions = None):
     env = RoverEnv(seed=100)
     i_dim, o_dim, DQN_nn = SimplifiedCartPole_DQN_NN(2,4)
     i_dim, o_dim, ES_DQN_nn = Smaller8x_SimplifiedCartPole_DQN_NN(2,4)
-    agent = AgentSafeDQNSplit(i_dim, o_dim, DQN_nn, ES_DQN_nn)
-    actions, rewards = run_experiment("split", predefined_actions, agent, env)
+    agent = AgentSafeDQNSplit(i_dim, o_dim, DQN_nn, ES_DQN_nn, 1)
+    actions, rewards = run_experiment("base", predefined_actions, agent, env)
     return actions
 
 def experiment_AgentIterativeSafetyGraph(predefined_actions = None):
     env = RoverEnv(seed=100)
     i_dim, o_dim, DQN_nn = SimplifiedCartPole_DQN_NN(2,4)
-    agent = AgentIterativeSafetyGraph(i_dim, o_dim, DQN_nn)
+    agent = AgentIterativeSafetyGraph(i_dim, o_dim, DQN_nn, 5)
     actions, rewards = run_experiment("iterative", predefined_actions, agent, env)
     return actions
 
@@ -69,7 +69,9 @@ def run_experiment(experiment_name, predefined_actions, agent, env):
                 agent.train()
                 break
 
-        if i % PLOT_INTERVAL == 0 and i != 0: record(experiment_name, i, agent, env, next_state)
+        if i % PLOT_INTERVAL == 0 and i != 0: 
+            record(experiment_name, i, agent, env, next_state)
+            plot()
 
         rewards.append(episode_reward) 
         print("Episode {0}/{1} -- reward {2}".format(i+1, MAX_EPISODE, episode_reward)) 
@@ -85,7 +87,7 @@ def record(experiment, episode, agent, env, state):
             state[0] = ((x - r) / r) 
             state[1] = ((y - r) / r)
             s = np.stack([state])
-            v = agent.dqn.Q_target.predict(s)
+            v = agent.predict(s)
             value = np.max(v)
             values[x][reso-1-y] = value
             violation = env.check_violation_solution(denormalize(state))
@@ -103,6 +105,7 @@ def plot():
                 plt.imshow(values, cmap='hot', interpolation='bicubic')
                 plt.legend()
                 plt.show()
+                print(f"accuracy: {accuracy}")
     else:
         episodes = {}
         accuracies = {}

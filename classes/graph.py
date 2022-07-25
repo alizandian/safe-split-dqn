@@ -62,8 +62,8 @@ class Graph:
         if l > 30 and s != 0 and s != l:
             self.cells[x1i][y1i] = -1
             if l1 not in self.graphs: 
-                mins = (l1[0] * self.teil, l1[1] * self.teil)
-                maxes = ((l1[0] + 1) * self.teil, (l1[1] + 1) * self.teil)
+                mins = ((l1[0] * self.teil) + self.mins[0], (l1[1] * self.teil) + self.mins[1])
+                maxes = (((l1[0] + 1) * self.teil) + self.mins[0], ((l1[1] + 1) * self.teil) + self.mins[1])
                 self.graphs[l1] = Graph(5, mins, maxes, self.transitions_from_full[l1])
             self.graphs[l1].add_transitions(state1, state2, violation)
         elif s == 0:

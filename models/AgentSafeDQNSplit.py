@@ -5,7 +5,7 @@ from classes.visualization import draw_table
 import numpy as np
 
 class AgentSafeDQNSplit(object):
-    def __init__(self, input_dim, output_dim, nn_model, estimator_nn_model, dimentions = (5,5), gamma = 1.0, replay_buffer_size = 500, verbose = False):
+    def __init__(self, input_dim, output_dim, nn_model, estimator_nn_model, dimention, gamma = 1.0, replay_buffer_size = 500, verbose = False):
 
         self.input_dim = input_dim
         self.output_dim = output_dim
@@ -25,7 +25,7 @@ class AgentSafeDQNSplit(object):
         self.counterexample_buffer = ReplayBuffer(replay_buffer_size)
 
         self.dqn = DQN(input_dim = input_dim, output_dim = output_dim, nn_model = nn_model, gamma = gamma, verbose = verbose)
-        self.estimator_dqn = DQNSplit(input_dim = input_dim, output_dim = output_dim, nn_model = estimator_nn_model, dimentions=dimentions, gamma = gamma, verbose = verbose)
+        self.estimator_dqn = DQNSplit(input_dim = input_dim, output_dim = output_dim, nn_model = estimator_nn_model, dimention=dimention, gamma = gamma, verbose = verbose)
 
 
     def get_action(self, input, theta = 0.0):
@@ -54,6 +54,9 @@ class AgentSafeDQNSplit(object):
                 self.previous_action_type = 1
             return np.argmax(final_action_q_val)
 
+    def predict(self, s):
+        return self.estimator_dqn.get_q_values(s)
+
     def train(self, batch_size=64, epoch=1):
         batch_size_ = min(batch_size, len(self.replay_buffer))
         epoch_ = min(epoch, int(len(self.replay_buffer)/batch_size_)+1)
@@ -63,14 +66,14 @@ class AgentSafeDQNSplit(object):
         for i in range(0, epoch_):
             transitions = self.replay_buffer.sample(batch_size_)
             loss += self.dqn.learn(transitions, batch_size)
-            estimator_transitions = [ [s, a, -1 if d == True else r, n, d] for s,a,r,n,d in transitions]
+            estimator_transitions = [ [s, a, -10 if d == True else r, n, d] for s,a,r,n,d in transitions]
             loss_estimator += self.estimator_dqn.learn(estimator_transitions)
 
         # Repeat the monitor DQN training only with the counterexample data
         batch_size_ = min(batch_size, len(self.counterexample_buffer))
         for i in range(0, epoch_):
             transitions = self.counterexample_buffer.sample(batch_size_) 
-            estimator_transitions = [ [s, a, -1 if d == True else r, n, d] for s,a,r,n,d in transitions]
+            estimator_transitions = [ [s, a, -10 if d == True else r, n, d] for s,a,r,n,d in transitions]
             loss_estimator += self.estimator_dqn.learn(estimator_transitions)
 
         loss = loss / epoch_ 

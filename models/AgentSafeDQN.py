@@ -44,7 +44,7 @@ class AgentSafeDQN(object):
         if violation != 0:
             self.counterexample_buffer.append(trans)
 
-    def get_action_singleshot(self, input, theta = 0.9):
+    def get_action(self, input, theta = 0.9):
         safety_q_val = self.monitor_dqn.get_q_values(np.array(input)[np.newaxis])[0]
         mask = [ 1 if val >= theta else 0 for val in safety_q_val]
         action_q_val = self.dqn.get_q_values(np.array(input)[np.newaxis])[0]
@@ -62,7 +62,7 @@ class AgentSafeDQN(object):
 
     def train(self, batch_size=32, epoch=1):
         batch_size_ = min(batch_size, len(self.replay_buffer))
-        epoch_ = min(epoch, int(len(self.replay_buffer/batch_size_))+1)
+        epoch_ = min(epoch, int(len(self.replay_buffer)/batch_size_))+1
 
         loss_action = 0
         loss_monitor = 0

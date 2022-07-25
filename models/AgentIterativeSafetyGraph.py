@@ -6,7 +6,7 @@ import numpy as np
 import configparser
 
 class AgentIterativeSafetyGraph(object):
-    def __init__(self, input_dim, output_dim, nn_model, gamma = 1.0, replay_buffer_size = 200, verbose = False):
+    def __init__(self, input_dim, output_dim, nn_model, dimention, gamma = 1.0, replay_buffer_size = 200, verbose = False):
         config = configparser.ConfigParser()
         config.read('config.ini')
 
@@ -22,8 +22,10 @@ class AgentIterativeSafetyGraph(object):
         self.previous_action_type = -1
         self.transition_buffer = ReplayBuffer(replay_buffer_size)
         self.dqn = DQN(input_dim = input_dim, output_dim = output_dim, nn_model = nn_model, gamma = gamma, verbose = verbose)
-        self.safety_graph = Graph(int(config["Paremeters"]["dimentions"]), (-1, -1), (1, 1))
+        self.safety_graph = Graph((dimention), (-1, -1), (1, 1))
 
+    def predict(self, s):
+        return self.dqn.Q_target.predict(s)
 
     def get_action(self, input, theta = -8.0):
         q_val = self.dqn.get_q_values(np.array(input)[np.newaxis])[0]
@@ -50,7 +52,7 @@ class AgentIterativeSafetyGraph(object):
             return np.argmax(final_action_q_val)
 
     def manipulate_transitions(self, transitions: List[Tuple]):
-        manipulated_transitions = [[s,a, -10 if d == True else r,n,d] for s,a,r,n,d in transitions]
+        manipulated_transitions = [[s,a, -1 if d == True else 0,n,d] for s,a,r,n,d in transitions]
         return manipulated_transitions
 
     def train(self):
