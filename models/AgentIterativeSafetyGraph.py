@@ -52,7 +52,7 @@ class AgentIterativeSafetyGraph(object):
             return np.argmax(final_action_q_val)
 
     def manipulate_transitions(self, transitions: List[Tuple]):
-        manipulated_transitions = [[s,a, -1 if d == True else 0,n,d] for s,a,r,n,d in transitions]
+        manipulated_transitions = [[s,a, -100 if d == True else 0,n,d] for s,a,r,n,d in transitions]
         return manipulated_transitions
 
     def train(self):

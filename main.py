@@ -8,7 +8,7 @@ from typing import Dict, Tuple
 
 MAX_EPISODE = 101
 VISUALISATION = True
-PLOT_INTERVAL = 50
+PLOT_INTERVAL = 20
 plot_values: Dict[str, Dict[int, Tuple[list, float]]] = {} # values and accurace (tuple) of each episode (second dict) of each experiment (first dict).
 # for FixedCartPole
 # normalizers=[2.5, 0.5]
