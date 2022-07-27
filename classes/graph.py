@@ -2,6 +2,7 @@ from __future__ import annotations
 from typing import List, Tuple, Dict
 from .node import Node, Region
 from classes.visualization import draw_graph, draw_table, draw_graph_grid
+import numpy as np
 
 class Graph:
     cells: List[List[int]] = None
@@ -18,7 +19,7 @@ class Graph:
         self.transitions_full = {}
         self.transitions_from = {}
         self.transitions_from_full = {}
-        self.cells = [[0 for i in range(dimention)] for j in range(dimention)]
+        self.cells = [[0 for i in range(dimention)] for j in range(dimention)] # first x then y
         self.graphs: Dict[Tuple, Graph] = {} # a dictionary, key is location, value would be another grid 
 
         if transitions != None:
@@ -32,15 +33,15 @@ class Graph:
     def feed_neural_network_feedback(self):
         pass
 
+    def get_loc(self, state):
+        x = self.clamp(int((state[0] - self.mins[0]) / self.len * self.dimention), 0, self.dimention-1)
+        y = self.clamp(int((state[1] - self.mins[1]) / self.len * self.dimention), 0, self.dimention-1)
+
+        return (x, y)
+
     def add_transitions(self, state1, state2, violation):
-        x1i = self.clamp(int((state1[0] - self.mins[0]) / self.len * self.dimention), 0, self.dimention-1)
-        y1i = self.clamp(int((state1[1] - self.mins[1]) / self.len * self.dimention), 0, self.dimention-1)
-
-        x2i = self.clamp(int((state2[0] - self.mins[0]) / self.len * self.dimention), 0, self.dimention-1)
-        y2i = self.clamp(int((state2[1] - self.mins[1]) / self.len * self.dimention), 0, self.dimention-1)
-
-        l1 = (x1i, y1i)
-        l2 = (x2i, y2i)
+        l1 = self.get_loc(state1)
+        l2 = self.get_loc(state2)
         t = (l1, l2) 
 
         if t not in self.transitions: self.transitions[t] = []
@@ -60,21 +61,33 @@ class Graph:
         s = sum(self.transitions_from[l1])
 
         if l > 30 and s != 0 and s != l:
-            self.cells[x1i][y1i] = -1
+            self.cells[l1[0]][l1[1]] = -1
             if l1 not in self.graphs: 
                 mins = ((l1[0] * self.teil) + self.mins[0], (l1[1] * self.teil) + self.mins[1])
                 maxes = (((l1[0] + 1) * self.teil) + self.mins[0], ((l1[1] + 1) * self.teil) + self.mins[1])
                 self.graphs[l1] = Graph(5, mins, maxes, self.transitions_from_full[l1])
             self.graphs[l1].add_transitions(state1, state2, violation)
         elif s == 0:
-            self.cells[x1i][y1i] = 0
+            self.cells[l1[0]][l1[1]] = 0
         else:
-            self.cells[x1i][y1i] = 1
+            self.cells[l1[0]][l1[1]] = 1
 
-    def proximity(self, transition):
-        s, a, r, n, d = transition
-        if d == True: return 0
-        D = 2
+    def proximity_to_nearest_unsafe_state(self, transition):
+        d = 1
+        s, _, _, n, d = transition
+        if d == True:
+            d = 0
+        else:
+            p = np.mean(np.array([s, n]), axis=0)
+            l = self.get_loc(p)
+
+            for i in range(1, self.dimention, 1):
+                k = [self.cells[x][y] for x,y in self.get_neighburs(l, i)]
+                if -1 in k or 1 in k:
+                    d = i
+                    break
+
+        return float(d/self.dimention)
 
     def visualize(self):
         #draw_table(self.cells)

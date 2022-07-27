@@ -49,12 +49,12 @@ class AgentIterativeSafetyGraph(object):
                 
             return np.argmax(final_action_q_val)
 
-    def manipulate_transitions(self, transitions: List[Tuple]):
-        manipulated_transitions = [[s,a, -100 if d == True else 0,n,d] for s,a,r,n,d in transitions]
+    def enhance_transitions(self, transitions: List[Tuple]):
+        manipulated_transitions = [[s,a, -100 if d == True else 1,n,d] for s,a,r,n,d in transitions]
         return manipulated_transitions
 
     def train(self):
-        transitions = self.manipulate_transitions(list(self.transition_buffer.get_buffer()))
+        transitions = self.enhance_transitions(list(self.transition_buffer.get_buffer()))
         loss = self.dqn.learn(transitions, len(self.transition_buffer))
         self.dqn.update_q_target()
         self.update_counter = 0
