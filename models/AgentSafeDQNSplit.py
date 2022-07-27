@@ -29,14 +29,6 @@ class AgentSafeDQNSplit(object):
 
 
     def get_action(self, input, theta = 0.0):
-        safety_q_val = self.estimator_dqn.get_q_values(np.array(input)[np.newaxis])[0]
-        mask = [ 1 if val >= theta else 0 for val in safety_q_val]
-        action_q_val = self.dqn.get_q_values(np.array(input)[np.newaxis])[0]
-        final_action_q_val = [ q * m for q, m in zip(action_q_val, mask) ]
-
-        if mask.count(1) == 0:
-            return np.argmax(action_q_val)
-
         self.frame_count += 1
         self.epsilon -= self.epsilon_interval / self.epsilon_greedy_frames
         self.epsilon = max(self.epsilon, self.epsilon_min)
@@ -45,13 +37,20 @@ class AgentSafeDQNSplit(object):
             if self.previous_action_type != 0: 
                 print("--------------------------RANDOM---------------------------")
                 self.previous_action_type = 0
-            valid_actions = [ i for i, x in enumerate(mask) if x == 1]
-            return np.random.choice(valid_actions)
+            return np.random.choice(self.output_dim)
 
         else:
             if self.previous_action_type != 1: 
                 print("--------------------------CHOSE----------------------------")
                 self.previous_action_type = 1
+
+            safety_q_val = self.estimator_dqn.get_q_values(np.array(input)[np.newaxis])[0]
+            mask = [ 1 if val >= theta else 0 for val in safety_q_val]
+            action_q_val = self.dqn.get_q_values(np.array(input)[np.newaxis])[0]
+            final_action_q_val = [ q * m for q, m in zip(action_q_val, mask) ]
+            if mask.count(1) == 0:
+                return np.argmax(action_q_val)
+
             return np.argmax(final_action_q_val)
 
     def predict(self, s):

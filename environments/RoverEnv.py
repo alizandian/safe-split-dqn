@@ -67,12 +67,21 @@ class RoverEnv(gym.Env):
             ]
         self.rendering_size = 600
         self.rendering_scale = self.rendering_size / (self.max - self.min)
+        self.normalizer=[0.01, 0.01]
+        self.denormalizer=[100, 100]
+
+
+    def normalize(self, state):
+        return (state[0] * self.normalizer[0], state[1] * self.normalizer[1])
+
+    def denormalize(self, state):
+        return (state[0] * self.denormalizer[0], state[1] * self.denormalizer[1])
 
     def seed(self, seed=None):
         self.np_random, seed = seeding.np_random(seed)
         return [seed]
 
-    def check_violation(self, state):
+    def __check_violation(self, state):
         x, y = state
         for minx, miny, maxx, maxy in self.unsafe_areas:
             if x >= minx and x <= maxx and y >= miny and y <= maxy:
@@ -83,7 +92,7 @@ class RoverEnv(gym.Env):
         return False
         
     def check_violation_solution(self, state):
-        x, y = state
+        x, y = self.denormalize(state)
         for minx, miny, maxx, maxy in self.unsafe_areas_perfect:
             if x >= minx and x <= maxx and y >= miny and y <= maxy:
                 return True
@@ -112,7 +121,7 @@ class RoverEnv(gym.Env):
 
         self.state = self.move(action, self.state)
 
-        done = self.check_violation(self.state)
+        done = self.__check_violation(self.state)
 
         if not done:
             reward = 1.0
@@ -130,13 +139,13 @@ class RoverEnv(gym.Env):
             self.steps_beyond_done += 1
             reward = 0.0
 
-        return np.array(self.state, dtype=np.float32), reward, done, {}
+        return np.array(self.normalize(self.state), dtype=np.float32), reward, done, {}
 
     def reset(self):
         self.state = self.np_random.uniform(low=-0.05, high=0.05, size=(2,))
         self.steps_beyond_done = None
         self.step_count = 0
-        return np.array(self.state, dtype=np.float32)
+        return np.array(self.normalize(self.state), dtype=np.float32)
 
     def loc_to_screen(self, state):
         x, y = state

@@ -10,21 +10,6 @@ MAX_EPISODE = 101
 VISUALISATION = True
 PLOT_INTERVAL = 20
 plot_values: Dict[str, Dict[int, Tuple[list, float]]] = {} # values and accurace (tuple) of each episode (second dict) of each experiment (first dict).
-# for FixedCartPole
-# normalizers=[2.5, 0.5]
-# denormalizers=[0.40, 2.0]
-normalizers=[0.01, 0.01]
-denormalizers=[100, 100]
-
-def normalize(state):
-    state[0] = state[0] * normalizers[0]
-    state[1] = state[1] * normalizers[1]
-    return state
-
-def denormalize(state):
-    state[0] = state[0] * denormalizers[0]
-    state[1] = state[1] * denormalizers[1]
-    return state
 
 def experiment_AgentSafeDQNSplit(predefined_actions = None):
     env = RoverEnv(seed=100)
@@ -47,7 +32,7 @@ def run_experiment(experiment_name, predefined_actions, agent, env):
     actions = []
     rewards = []
     for i in range(0, MAX_EPISODE):
-        state = normalize(env.reset())
+        state = env.reset()
         episode_reward = 0
 
         while True:
@@ -59,7 +44,6 @@ def run_experiment(experiment_name, predefined_actions, agent, env):
                 actions.append(action)
             action_index += 1
             next_state, reward, done, _ = env.step(action)
-            next_state = normalize(next_state)
             trans = [state, action, reward, next_state, done]
             agent.add_transition(trans)
             episode_reward += reward
@@ -71,41 +55,31 @@ def run_experiment(experiment_name, predefined_actions, agent, env):
 
         if i % PLOT_INTERVAL == 0 and i != 0: 
             record(experiment_name, i, agent, env, next_state)
-            plot()
+            plot(only_updates=True, only_accuracy=True)
 
         rewards.append(episode_reward) 
         print("Episode {0}/{1} -- reward {2}".format(i+1, MAX_EPISODE, episode_reward)) 
     return actions, rewards
 
 def record(experiment, episode, agent, env, state):
-    reso = 10
-    error = 0
-    values = [[0]*reso for i in range(reso)]
-    for x in range(reso):
-        for y in range(reso):
-            r = reso/2
-            state[0] = ((x - r) / r) 
-            state[1] = ((y - r) / r)
-            s = np.stack([state])
-            v = agent.predict(s)
-            value = np.max(v)
-            values[x][reso-1-y] = value
-            violation = env.check_violation_solution(denormalize(state))
-            value_estimation = True if value < 5 else False
-            if violation != value_estimation: error += 1
-
-    accuracy = 100 - (error / reso * reso)
+    values, accuracy = agent.dqn.get_snapshot(10, env.check_violation_solution, 5)
     if experiment not in plot_values: plot_values[experiment] = {}
     plot_values[experiment][episode] = (values, accuracy)
 
-def plot():
-    if len(plot_values.keys()) == 1:
-        for experiment in plot_values.keys():
-            for episode, (values, accuracy) in plot_values[experiment].items():
-                plt.imshow(values, cmap='hot', interpolation='bicubic')
-                plt.legend()
-                plt.show()
-                print(f"accuracy: {accuracy}")
+def plot_output(values, accuracy, only_accuracy=False):
+    if only_accuracy:
+        print(f"accuracy: {accuracy}")
+        return
+
+    plt.imshow(values, cmap='hot', interpolation='bicubic')
+    plt.legend()
+    plt.show()
+
+def plot(only_updates=False, only_accuracy=False): 
+    if only_updates:
+        last_experiment = list(plot_values.values())[-1]
+        values, accuracy = list(last_experiment.values())[-1]
+        plot_output(values, accuracy, only_accuracy)
     else:
         episodes = {}
         accuracies = {}
@@ -115,11 +89,11 @@ def plot():
             for episode, (values, accuracy) in plot_values[experiment].items():
                 episodes[experiment].append(episode)
                 accuracies[experiment].append(accuracy)
+                plot_output(values, accuracy, only_accuracy)
         for experiment in plot_values.keys():
             plt.plot(episodes[experiment], accuracies[experiment], label = experiment, linestyle="-.")
         plt.legend()
         plt.show()
-
 
 if __name__ == "__main__":
     actions = experiment_AgentIterativeSafetyGraph()
