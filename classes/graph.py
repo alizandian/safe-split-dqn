@@ -75,7 +75,7 @@ class Graph:
         self.update()
 
 
-    def calculate_conflux(self, transition, x, y):
+    def calculate_conflux_force(self, transition, x, y):
         """
         TODO: Not yet dimention free
         returning a value between -1 and 1. 0
@@ -102,23 +102,24 @@ class Graph:
 
         Optimizatino potential here. Should we consider all cells or just a rough position of nodes is enough?
         """
-        d = 1
         s, _, _, n, d = transition
         if d == True:
-            d = 0
+            return 1
         else:
-            dx = n[0] - s[0]
-            dy = n[1] - s[1]
             p = np.mean(np.array([s, n]), axis=0)
             l = self.get_loc(p)
+            forces = []
 
-            for i in range(1, self.dimention, 1):
-                k = [self.cells[x][y] for x,y in self.get_neighburs(l, i)]
-                if -1 in k or 1 in k:
-                    d = i
-                    break
+            m = min(self.dimention, max_depth)
+            for i in range(1, m, 1):
+                for x,y in self.get_neighburs(l, i):
+                    if self.cells[x][y] == -1 or self.cells[x][y] == 1:
+                        forces.append(self.calculate_conflux_force(transition, x, y) * (m-i+1) / m)
 
-        return float(d/self.dimention)
+            if len(forces) == 0:
+                return 0
+            else:
+                return float(sum(forces)/len(forces))
 
     def visualize(self):
         #draw_table(self.cells)

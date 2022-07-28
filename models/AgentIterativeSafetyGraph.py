@@ -24,6 +24,8 @@ class AgentIterativeSafetyGraph(object):
         self.dqn = DQN(input_dim = input_dim, output_dim = output_dim, nn_model = nn_model, gamma = gamma, verbose = verbose)
         self.safety_graph = Graph((dimention), (-1, -1), (1, 1))
 
+    def __clamp(self, n, smallest, largest): return max(smallest, min(n, largest))
+
     def predict(self, s):
         return self.dqn.Q_target.predict(s)
 
@@ -50,8 +52,7 @@ class AgentIterativeSafetyGraph(object):
             return np.argmax(final_action_q_val)
 
     def enhance_transitions(self, transitions: List[Tuple]):
-        manipulated_transitions = [[s,a, -100 if d == True else 1,n,d] for s,a,r,n,d in transitions]
-        return manipulated_transitions
+        return [[s,a, self.__clamp((-1 * self.safety_graph.proximity_to_unsafe_states((s,a,r,n,d))) * 100, -100, 1), n,d] for s,a,r,n,d in transitions]
 
     def train(self):
         transitions = self.enhance_transitions(list(self.transition_buffer.get_buffer()))
