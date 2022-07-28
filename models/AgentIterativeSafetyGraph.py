@@ -6,12 +6,13 @@ import numpy as np
 import configparser
 
 class AgentIterativeSafetyGraph(object):
-    def __init__(self, input_dim, output_dim, nn_model, dimention, gamma = 1.0, replay_buffer_size = 200, verbose = False):
+    def __init__(self, input_dim, output_dim, nn_model, dimention, enhance_transitions=True, gamma = 1.0, replay_buffer_size = 200, verbose = False):
         config = configparser.ConfigParser()
         config.read('config.ini')
 
         self.input_dim = input_dim
         self.output_dim = output_dim
+        self.enhance_transitions = enhance_transitions
         self.epsilon = 1.0
         self.epsilon_min = 0.1
         self.epsilon_max = 1.0
@@ -20,6 +21,7 @@ class AgentIterativeSafetyGraph(object):
         self.epsilon_random_frames = 3500
         self.epsilon_greedy_frames = 50000
         self.previous_action_type = -1
+        self.history_buffer = ReplayBuffer(1000)
         self.transition_buffer = ReplayBuffer(replay_buffer_size)
         self.dqn = DQN(input_dim = input_dim, output_dim = output_dim, nn_model = nn_model, gamma = gamma, verbose = verbose)
         self.safety_graph = Graph((dimention), (-1, -1), (1, 1))
@@ -55,14 +57,19 @@ class AgentIterativeSafetyGraph(object):
         return [[s,a, self.__clamp((-1 * self.safety_graph.proximity_to_unsafe_states((s,a,r,n,d))) * 100, -100, 1), n,d] for s,a,r,n,d in transitions]
 
     def train(self):
-        transitions = self.enhance_transitions(list(self.transition_buffer.get_buffer()))
-        loss = self.dqn.learn(transitions, len(self.transition_buffer))
+        hb = self.history_buffer.get_buffer()
+        tb = self.transition_buffer.get_buffer()
+        transitions = self.enhance_transitions(list(tb)) if self.enhance_transitions else tb
+        if len(hb) == 1000:
+            history = self.history_buffer.sample(1000)
+            self.dqn.learn(history, len(history))
+
+        self.dqn.learn(transitions, len(tb))
+        self.dqn.learn(transitions, len(tb))
         self.dqn.update_q_target()
         self.update_counter = 0
+        hb.extend(tb)
         self.transition_buffer.clear()
-        #self.safety_graph.visualize()
-
-        return loss
 
     def add_transition(self, trans):
         self.transition_buffer.append(trans)

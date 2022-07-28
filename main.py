@@ -11,19 +11,18 @@ VISUALISATION = True
 PLOT_INTERVAL = 20
 plot_values: Dict[str, Dict[int, Tuple[list, float]]] = {} # values and accurace (tuple) of each episode (second dict) of each experiment (first dict).
 
-def experiment_AgentSafeDQNSplit(predefined_actions = None):
+def experiment_base(predefined_actions = None):
     env = RoverEnv(seed=100)
     i_dim, o_dim, DQN_nn = SimplifiedCartPole_DQN_NN(2,4)
-    i_dim, o_dim, ES_DQN_nn = Smaller8x_SimplifiedCartPole_DQN_NN(2,4)
-    agent = AgentSafeDQNSplit(i_dim, o_dim, DQN_nn, ES_DQN_nn, 1)
+    agent = AgentIterativeSafetyGraph(i_dim, o_dim, DQN_nn, 5, enhance_transitions=False)
     actions, rewards = run_experiment("base", predefined_actions, agent, env)
     return actions
 
-def experiment_AgentIterativeSafetyGraph(predefined_actions = None):
+def experiment_enhanced_transitions(predefined_actions = None):
     env = RoverEnv(seed=100)
     i_dim, o_dim, DQN_nn = SimplifiedCartPole_DQN_NN(2,4)
     agent = AgentIterativeSafetyGraph(i_dim, o_dim, DQN_nn, 5)
-    actions, rewards = run_experiment("iterative", predefined_actions, agent, env)
+    actions, rewards = run_experiment("enhanced", predefined_actions, agent, env)
     return actions
 
 def run_experiment(experiment_name, predefined_actions, agent, env):
@@ -65,6 +64,7 @@ def record(experiment, episode, agent, env, state):
     values, accuracy = agent.dqn.get_snapshot(10, env.check_violation_solution, 5)
     if experiment not in plot_values: plot_values[experiment] = {}
     plot_values[experiment][episode] = (values, accuracy)
+    plot()
 
 def plot_output(values, accuracy, only_accuracy=False):
     if only_accuracy:
@@ -96,6 +96,6 @@ def plot(only_updates=False, only_accuracy=False):
         plt.show()
 
 if __name__ == "__main__":
-    actions = experiment_AgentIterativeSafetyGraph()
-    actions = experiment_AgentSafeDQNSplit(predefined_actions=actions)
+    actions = experiment_base()
+    actions = experiment_enhanced_transitions(predefined_actions=actions)
     plot()
