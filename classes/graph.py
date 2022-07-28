@@ -71,13 +71,44 @@ class Graph:
             self.cells[l1[0]][l1[1]] = 0
         else:
             self.cells[l1[0]][l1[1]] = 1
+        
+        self.update()
 
-    def proximity_to_nearest_unsafe_state(self, transition):
+
+    def calculate_conflux(self, transition, x, y):
+        """
+        TODO: Not yet dimention free
+        returning a value between -1 and 1. 0
+        """
+        s, _, _, n, d = transition
+        p = np.mean(np.array([s, n]), axis=0)
+        l = self.get_loc(p)
+        dx = n[0] - s[0]
+        dy = n[1] - s[1]
+        Dx = x - l[0]
+        Dy = y - l[1]
+
+        xforce = self.clamp(float(dx / Dx), -1, 1)
+        yforce = self.clamp(float(dy / Dy), -1, 1)
+
+        force = xforce + yforce
+        return self.clamp(force, -1, 1)
+
+    def proximity_to_unsafe_states(self, transition, max_depth = 5):
+        """
+        TODO: Not yet dimention free
+        calculates the significance of the transition regarded to unsafe states. 1 max, 0 min
+        Only considering the first layer of accuracy of the grid, (not considering increase resolutions) for performance sake
+
+        Optimizatino potential here. Should we consider all cells or just a rough position of nodes is enough?
+        """
         d = 1
         s, _, _, n, d = transition
         if d == True:
             d = 0
         else:
+            dx = n[0] - s[0]
+            dy = n[1] - s[1]
             p = np.mean(np.array([s, n]), axis=0)
             l = self.get_loc(p)
 
@@ -91,9 +122,8 @@ class Graph:
 
     def visualize(self):
         #draw_table(self.cells)
-        nodes = self.get_nodes()
-        draw_graph(nodes)
-        draw_graph_grid(nodes, (self.dimention, self.dimention))
+        draw_graph(self.nodes)
+        draw_graph_grid(self.nodes, (self.dimention, self.dimention))
 
     def exists(self, location) -> bool:
         if location[0] >= 0 and location[0] < self.dimention and location[1] >= 0 and location[1] < self.dimention:
@@ -122,7 +152,11 @@ class Graph:
 
         return ns
 
-    def get_nodes(self) -> List[Node]:
+    def update(self):
+        """
+        Updating node representation of the model.
+        A lot of optimisation potential here. Perhaps increamental updates?
+        """
         Node.index = 0
         nodes: List[Node] = []
         assigned = []
@@ -158,7 +192,7 @@ class Graph:
                 if n1.is_adjacent(n2):
                     n1.add_node(n2)
                     
-        return nodes
+        self.nodes = nodes
 
 
 
