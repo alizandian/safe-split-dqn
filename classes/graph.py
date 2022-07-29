@@ -169,7 +169,7 @@ class Graph:
                 value = self.cells[i][j]
                 node = Node(value)
                 nodes.append(node)
-                node.add_region(Region(j, j+1, i, i+1))
+                node.add_region(Region(i, i+1, j, j+1))
 
                 ns = self.get_neighburs(l)
                 while len(ns) != 0:
@@ -179,7 +179,7 @@ class Graph:
                     new_ns = []
                     for (x, y) in ns:
                         if (x,y) not in assigned:
-                            node.add_region(Region(y, y+1, x, x+1))
+                            node.add_region(Region(x, x+1, y, y+1))
                             assigned.append((x,y))
 
                         neighburs = self.get_neighburs((x, y))

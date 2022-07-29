@@ -4,24 +4,26 @@ from models.AgentIterativeSafetyGraph import AgentIterativeSafetyGraph
 from experiment.nn_config import *
 from matplotlib import pyplot as plt
 from typing import Dict, Tuple
+import time
 
 
 MAX_EPISODE = 101
 VISUALISATION = True
 PLOT_INTERVAL = 20
+ARTIFICIAL_DELAY = -0.1
 plot_values: Dict[str, Dict[int, Tuple[list, float]]] = {} # values and accurace (tuple) of each episode (second dict) of each experiment (first dict).
 
 def experiment_base(predefined_actions = None):
     env = RoverEnv(seed=100)
     i_dim, o_dim, DQN_nn = SimplifiedCartPole_DQN_NN(2,4)
-    agent = AgentIterativeSafetyGraph(i_dim, o_dim, DQN_nn, 5, enhance_transitions=False)
+    agent = AgentIterativeSafetyGraph(i_dim, o_dim, DQN_nn, 7, enhance_transitions=False)
     actions, rewards = run_experiment("base", predefined_actions, agent, env)
     return actions
 
 def experiment_enhanced_transitions(predefined_actions = None):
     env = RoverEnv(seed=100)
     i_dim, o_dim, DQN_nn = SimplifiedCartPole_DQN_NN(2,4)
-    agent = AgentIterativeSafetyGraph(i_dim, o_dim, DQN_nn, 5)
+    agent = AgentIterativeSafetyGraph(i_dim, o_dim, DQN_nn, 7)
     actions, rewards = run_experiment("enhanced", predefined_actions, agent, env)
     return actions
 
@@ -47,10 +49,12 @@ def run_experiment(experiment_name, predefined_actions, agent, env):
             agent.add_transition(trans)
             episode_reward += reward
             state = next_state
+            if ARTIFICIAL_DELAY >= 0: time.sleep(ARTIFICIAL_DELAY)
             if VISUALISATION: env.render()
             if done: 
                 agent.train()
                 break
+
 
         if i % PLOT_INTERVAL == 0 and i != 0: 
             record(experiment_name, i, agent, env, next_state)
@@ -96,6 +100,6 @@ def plot(only_updates=False, only_accuracy=False):
         plt.show()
 
 if __name__ == "__main__":
-    actions = experiment_base()
-    actions = experiment_enhanced_transitions(predefined_actions=actions)
+    actions = experiment_enhanced_transitions()
+    actions = experiment_base(predefined_actions=actions)
     plot()

@@ -69,6 +69,7 @@ class RoverEnv(gym.Env):
         self.rendering_scale = self.rendering_size / (self.max - self.min)
         self.normalizer=[0.01, 0.01]
         self.denormalizer=[100, 100]
+        self.previous_location = (-2,-2)
 
 
     def normalize(self, state):
@@ -156,10 +157,15 @@ class RoverEnv(gym.Env):
             from gym.envs.classic_control import rendering
             self.viewer = rendering.Viewer(self.rendering_size, self.rendering_size)
             rover = rendering.FilledPolygon([(-10, -10), (-10, 10), (10, 10), (10, -10)])
+            ghost = rendering.FilledPolygon([(-10, -10), (-10, 10), (10, 10), (10, -10)])
             rover.set_color(0, 0, 0)
+            ghost.set_color(50, 50, 50)
             self.rovertrans = rendering.Transform()
+            self.ghosttrans = rendering.Transform()
             rover.add_attr(self.rovertrans)
+            ghost.add_attr(self.ghosttrans)
             self.viewer.add_geom(rover)
+            self.viewer.add_geom(ghost)
 
             for area in self.unsafe_areas:
                 left_bot = self.loc_to_screen((area[0], area[1]))
@@ -176,6 +182,8 @@ class RoverEnv(gym.Env):
 
         x, y = self.loc_to_screen(self.state)
         self.rovertrans.set_translation(x, y)
+        self.ghosttrans.set_translation(self.previous_location[0], self.previous_location[1])
+        self.previous_location = (x, y)
 
         return self.viewer.render(return_rgb_array=mode == "rgb_array")
 

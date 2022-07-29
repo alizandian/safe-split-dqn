@@ -19,9 +19,9 @@ def draw_table(coord: List[List[int]] = [[1,0,0,1], [1,1,1,1], [1,0,0,1]]):
         for x, column in enumerate(rows):
             lx = max_x - min_x
             ly = max_y - min_y
-            x_unit = lx / len(rows)
-            y_unit = ly / len(coord)
-            canvas.create_rectangle(x * x_unit, y * y_unit, (x * x_unit) + x_unit, ( y * y_unit) + y_unit, outline="#fb0", fill=colors[column])
+            y_unit = lx / len(rows)
+            x_unit = ly / len(coord)
+            canvas.create_rectangle(x * x_unit, max_y - (y * y_unit), (x * x_unit) + x_unit, max_y -((y * y_unit) + y_unit), outline="#fb0", fill=colors[column])
 
     canvas.pack()
     root.mainloop()
@@ -65,37 +65,7 @@ def draw_graph_grid(nodes: List[Node], grid_dimention):
 
     for index, node in enumerate(nodes):
         for r in node.regions:
-            canvas.create_rectangle(r.x_min*xu, max_y - r.y_min*yu, r.x_max*xu, max_y - r.y_max*yu, fill=colors[node.value])
-
-    canvas.pack()
-    root.mainloop()
-
-
-def draw_graph_basic(nodes: List[Node]):
-    root = tkinter.Tk()
-    min_x, min_y = 0, 0
-    max_x, max_y = 500, 500
-    node_size = 20
-    canvas = tkinter.Canvas(root, bg="white", height=max_x, width=max_y)
-    
-    lx = max_x - min_x
-    ly = max_y - min_y
-    x = lx / 3
-    y_unit = ly / (len(nodes) + 1)
-
-
-    node_positions = {}
-    for i, node in enumerate(nodes):
-        node_positions[node] = (x, y_unit * (i+1))
-        canvas.create_oval(x, y_unit * (i+1), x + node_size, y_unit * (i+1) + node_size, fill=colors[node.value])
-        canvas.create_text(x * 2, y_unit * (i+1), fill=colors[node.value], font="Times 20 italic bold", text=node.region_formula_text())
-
-    for i, node in enumerate(nodes):
-        for n in node.nodes:
-            coord1 = node_positions[node]
-            coord2 = node_positions[n]
-            canvas.create_line(coord1[0] - (5 + i*5), coord1[1], coord2[0] - (5 + i*5), coord2[1])
-
+            canvas.create_rectangle(r.x_min*xu, max_y- r.y_min*yu, r.x_max*xu, max_y - r.y_max*yu, fill=colors[node.value])
 
     canvas.pack()
     root.mainloop()

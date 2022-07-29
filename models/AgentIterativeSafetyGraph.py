@@ -6,13 +6,13 @@ import numpy as np
 import configparser
 
 class AgentIterativeSafetyGraph(object):
-    def __init__(self, input_dim, output_dim, nn_model, dimention, enhance_transitions=True, gamma = 1.0, replay_buffer_size = 200, verbose = False):
+    def __init__(self, input_dim, output_dim, nn_model, dimention, do_enhance_transitions=True, gamma = 1.0, replay_buffer_size = 200, verbose = False):
         config = configparser.ConfigParser()
         config.read('config.ini')
 
         self.input_dim = input_dim
         self.output_dim = output_dim
-        self.enhance_transitions = enhance_transitions
+        self.do_enhance_transitions = do_enhance_transitions
         self.epsilon = 1.0
         self.epsilon_min = 0.1
         self.epsilon_max = 1.0
@@ -59,9 +59,9 @@ class AgentIterativeSafetyGraph(object):
     def train(self):
         hb = self.history_buffer.get_buffer()
         tb = self.transition_buffer.get_buffer()
-        transitions = self.enhance_transitions(list(tb)) if self.enhance_transitions else tb
-        if len(hb) == 1000:
-            history = self.history_buffer.sample(1000)
+        transitions = self.enhance_transitions(list(tb)) if self.do_enhance_transitions else tb
+        if len(hb) >= 500:
+            history = self.enhance_transitions(self.history_buffer.sample(500))
             self.dqn.learn(history, len(history))
 
         self.dqn.learn(transitions, len(tb))
@@ -70,6 +70,7 @@ class AgentIterativeSafetyGraph(object):
         self.update_counter = 0
         hb.extend(tb)
         self.transition_buffer.clear()
+        #self.safety_graph.visualize()
 
     def add_transition(self, trans):
         self.transition_buffer.append(trans)
