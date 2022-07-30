@@ -88,6 +88,9 @@ class Graph:
         Dx = x - l[0]
         Dy = y - l[1]
 
+
+        if Dx == 0: Dx = dx
+        if Dy == 0: Dy = dx
         xforce = self.clamp(float(dx / Dx), -1, 1)
         yforce = self.clamp(float(dy / Dy), -1, 1)
 

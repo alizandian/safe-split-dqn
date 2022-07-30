@@ -18,8 +18,8 @@ class AgentIterativeSafetyGraph(object):
         self.epsilon_max = 1.0
         self.epsilon_interval = (self.epsilon_max - self.epsilon_min)
         self.frame_count = 0
-        self.epsilon_random_frames = 3500
-        self.epsilon_greedy_frames = 50000
+        self.epsilon_random_frames = 0 #2000
+        self.epsilon_greedy_frames = 1 #5000
         self.previous_action_type = -1
         self.history_buffer = ReplayBuffer(1000)
         self.transition_buffer = ReplayBuffer(replay_buffer_size)
@@ -36,7 +36,8 @@ class AgentIterativeSafetyGraph(object):
         self.epsilon -= self.epsilon_interval / self.epsilon_greedy_frames
         self.epsilon = max(self.epsilon, self.epsilon_min)
         
-        if self.frame_count < self.epsilon_random_frames or self.epsilon > np.random.rand(1)[0]:
+        # if self.frame_count < self.epsilon_random_frames or self.epsilon > np.random.rand(1)[0]:
+        if self.frame_count < self.epsilon_random_frames:
             if self.previous_action_type != 0: 
                 print("------------------------  RANDOM  -------------------------")
                 self.previous_action_type = 0
@@ -47,11 +48,16 @@ class AgentIterativeSafetyGraph(object):
                 print("------------------------  CHOSE  -------------------------")
                 self.previous_action_type = 1
             q_val = self.dqn.get_q_values(np.array(input)[np.newaxis])[0]
-            mask = [ 1 if val >= theta else 0 for val in q_val]
-            final_action_q_val = [ q * m for q, m in zip(q_val, mask)]
-            if mask.count(1) == 0: return np.argmax(q_val)
+            # mask = [ 1 if val >= theta else 0 for val in q_val]
+            # final_action_q_val = [ q * m for q, m in zip(q_val, mask)]
+            # if mask.count(1) == 0: return np.argmax(q_val)
                 
-            return np.argmax(final_action_q_val)
+            # return np.argmax(final_action_q_val)
+            possibles = [i for i in range(len(q_val)) if q_val[i] > theta]
+            if len(possibles) == 0:
+                return np.argmax(q_val)
+            else:
+                return np.random.choice(possibles)
 
     def enhance_transitions(self, transitions: List[Tuple]):
         return [[s,a, self.__clamp((-1 * self.safety_graph.proximity_to_unsafe_states((s,a,r,n,d))) * 100, -100, 1), n,d] for s,a,r,n,d in transitions]

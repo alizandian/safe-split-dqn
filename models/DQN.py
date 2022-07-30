@@ -5,7 +5,7 @@ import numpy as np
 class DQN(object):
 
     def __init__(self, input_dim, output_dim, nn_model, 
-                optimizer = 'adam', loss_function = 'mse', gamma = 1.0,
+                optimizer = 'adam', loss_function = 'mse', gamma = 0.9,
                 verbose=False):
 
         self.input_dim = input_dim
@@ -54,7 +54,7 @@ class DQN(object):
         for y in range(reso):
             for x in range(reso):
                 v = r[y][x]
-                value = np.max(v)
+                value = np.average(v)
                 values[y][x] = value
                 violation = violation_check_func(states[y*reso+x])
                 value_estimation = True if value < min_threshold else False
