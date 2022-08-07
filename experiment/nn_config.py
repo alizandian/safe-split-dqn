@@ -23,14 +23,12 @@ def Smaller8x_SimplifiedCartPole_DQN_NN(input_dim=2, output_dim=2):
 
     return input_dim, output_dim, model
 
-def SimplifiedCartPole_SafetyMonitor_NN():
-    input_dim = 2
-    output_dim = 2
+def SimplifiedCartPole_SafetyMonitor_NN(input_dim = 2, output_dim = 2):
     initializer = tf.keras.initializers.RandomUniform(minval=-0.1, maxval=0.1)
 
     model = tf.keras.Sequential([
         tf.keras.Input(shape=(input_dim,)),
-        tf.keras.layers.Dense(100, activation = tf.keras.activations.relu, kernel_initializer='he_uniform'),
+        tf.keras.layers.Dense(100, activation = tf.keras.activations.linear, kernel_initializer='he_uniform'),
         tf.keras.layers.Dense(100, activation = tf.keras.activations.sigmoid, kernel_initializer='he_uniform'),
         tf.keras.layers.Dense(100, activation = tf.keras.activations.linear, kernel_initializer='he_uniform'),
         tf.keras.layers.Dense(output_dim, activation = tf.keras.activations.tanh, kernel_initializer=initializer, name='output'),

@@ -7,7 +7,7 @@ from typing import Dict, Tuple
 import time
 
 
-MAX_EPISODE = 201
+MAX_EPISODE = 401
 VISUALISATION = True
 PLOT_INTERVAL = 50
 ARTIFICIAL_DELAY = -0.1
@@ -15,14 +15,14 @@ plot_values: Dict[str, Dict[int, Tuple[list, float]]] = {} # values and accurace
 
 def experiment_base(predefined_actions = None):
     env = RoverEnv(seed=100)
-    i_dim, o_dim, DQN_nn = SimplifiedCartPole_DQN_NN(2,4)
+    i_dim, o_dim, DQN_nn = SimplifiedCartPole_SafetyMonitor_NN(2,4)
     agent = AgentIterativeSafetyGraph(i_dim, o_dim, DQN_nn, 7, do_enhance_transitions=False)
     actions, rewards = run_experiment("base", predefined_actions, agent, env)
     return actions
 
 def experiment_enhanced_transitions(predefined_actions = None):
     env = RoverEnv(seed=100)
-    i_dim, o_dim, DQN_nn = SimplifiedCartPole_DQN_NN(2,4)
+    i_dim, o_dim, DQN_nn = SimplifiedCartPole_SafetyMonitor_NN(2,4)
     agent = AgentIterativeSafetyGraph(i_dim, o_dim, DQN_nn, 7)
     actions, rewards = run_experiment("enhanced", predefined_actions, agent, env)
     return actions
@@ -56,7 +56,7 @@ def run_experiment(experiment_name, predefined_actions, agent, env):
                 break
 
 
-        if i % PLOT_INTERVAL == 0: 
+        if i % PLOT_INTERVAL == 0 and i != 0: 
             record(experiment_name, i, agent, env, next_state)
             plot(only_updates=True, only_accuracy=True)
 
@@ -77,6 +77,7 @@ def plot_output(values, accuracy, only_accuracy=False):
 
     plt.imshow(values, cmap='hot', interpolation='bicubic')
     plt.legend()
+    plt.colorbar()
     plt.show()
 
 def plot(only_updates=False, only_accuracy=False): 

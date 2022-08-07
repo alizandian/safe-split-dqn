@@ -6,7 +6,7 @@ import numpy as np
 import configparser
 
 class AgentIterativeSafetyGraph(object):
-    def __init__(self, input_dim, output_dim, nn_model, dimention, do_enhance_transitions=True, gamma = 1.0, replay_buffer_size = 200, verbose = False):
+    def __init__(self, input_dim, output_dim, nn_model, dimention, do_enhance_transitions=True, gamma = 0.9, replay_buffer_size = 200, verbose = False):
         config = configparser.ConfigParser()
         config.read('config.ini')
 
@@ -18,8 +18,10 @@ class AgentIterativeSafetyGraph(object):
         self.epsilon_max = 1.0
         self.epsilon_interval = (self.epsilon_max - self.epsilon_min)
         self.frame_count = 0
-        self.epsilon_random_frames = 0 #2000
-        self.epsilon_greedy_frames = 1 #5000
+        self.epsilon_random_frames = 6000 #2000
+        self.epsilon_greedy_frames = 10000 #5000
+        self.update_counter = 0
+        self.update_target_interval = 200
         self.previous_action_type = -1
         self.history_buffer = ReplayBuffer(1000)
         self.transition_buffer = ReplayBuffer(replay_buffer_size)
@@ -31,7 +33,7 @@ class AgentIterativeSafetyGraph(object):
     def predict(self, s):
         return self.dqn.Q_target.predict(s)
 
-    def get_action(self, input, theta = -8.0):
+    def get_action(self, input, theta = 0.0):
         self.frame_count += 1
         self.epsilon -= self.epsilon_interval / self.epsilon_greedy_frames
         self.epsilon = max(self.epsilon, self.epsilon_min)
@@ -59,21 +61,26 @@ class AgentIterativeSafetyGraph(object):
             else:
                 return np.random.choice(possibles)
 
-    def enhance_transitions(self, transitions: List[Tuple]):
-        return [[s,a, self.__clamp((-1 * self.safety_graph.proximity_to_unsafe_states((s,a,r,n,d))) * 100, -100, 1), n,d] for s,a,r,n,d in transitions]
+    def enhance_transitions(self, transitions: List[Tuple], only_last_items = 20):
+        t = transitions if len(transitions) < only_last_items else transitions[-only_last_items+1:]
+        return [[s,a, -1 if d == 1 else 0.2, n,d] for s,a,r,n,d in t]
 
     def train(self):
         hb = self.history_buffer.get_buffer()
         tb = self.transition_buffer.get_buffer()
         transitions = self.enhance_transitions(list(tb)) if self.do_enhance_transitions else tb
-        if len(hb) >= 500:
-            history = self.enhance_transitions(self.history_buffer.sample(500))
+        if len(hb) >= 100:
+            history = self.enhance_transitions(self.history_buffer.sample(100), 100)
             self.dqn.learn(history, len(history))
+            self.update_counter += len(history)
 
         self.dqn.learn(transitions, len(tb))
-        self.dqn.learn(transitions, len(tb))
-        self.dqn.update_q_target()
-        self.update_counter = 0
+        self.update_counter += len(tb)
+
+        if self.update_counter >= self.update_target_interval:
+            self.dqn.update_q_target()
+            self.update_counter = 0
+
         hb.extend(tb)
         self.transition_buffer.clear()
         #self.safety_graph.visualize()
