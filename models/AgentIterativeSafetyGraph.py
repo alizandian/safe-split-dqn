@@ -6,7 +6,7 @@ import numpy as np
 import configparser
 
 class AgentIterativeSafetyGraph(object):
-    def __init__(self, input_dim, output_dim, nn_model, dimention, do_enhance_transitions=True, gamma = 0.9, replay_buffer_size = 200, verbose = False):
+    def __init__(self, input_dim, output_dim, nn_model, dimention, do_enhance_transitions=True, gamma = 0.8, replay_buffer_size = 200, verbose = False):
         config = configparser.ConfigParser()
         config.read('config.ini')
 
@@ -18,7 +18,7 @@ class AgentIterativeSafetyGraph(object):
         self.epsilon_max = 1.0
         self.epsilon_interval = (self.epsilon_max - self.epsilon_min)
         self.frame_count = 0
-        self.epsilon_random_frames = 6000 #2000
+        self.epsilon_random_frames = 7000 #2000
         self.epsilon_greedy_frames = 10000 #5000
         self.update_counter = 0
         self.update_target_interval = 200
@@ -43,7 +43,8 @@ class AgentIterativeSafetyGraph(object):
             if self.previous_action_type != 0: 
                 print("------------------------  RANDOM  -------------------------")
                 self.previous_action_type = 0
-            return np.random.choice(self.output_dim)
+            # return np.random.choice(self.output_dim)
+            return np.random.choice([0,1,2,3])
 
         else:
             if self.previous_action_type != 1: 
@@ -63,7 +64,7 @@ class AgentIterativeSafetyGraph(object):
 
     def enhance_transitions(self, transitions: List[Tuple], only_last_items = 20):
         t = transitions if len(transitions) < only_last_items else transitions[-only_last_items+1:]
-        return [[s,a, -1 if d == 1 else 0.2, n,d] for s,a,r,n,d in t]
+        return [[s,a, -2 if d == 1 else 0.2, n,d] for s,a,r,n,d in t]
 
     def train(self):
         hb = self.history_buffer.get_buffer()

@@ -48,13 +48,13 @@ class DQN(object):
                 states.append((((x - r) / r), ((y - r) / r)))
 
         results = self.Q_main.predict(np.stack(states))
-        r = np.reshape(results, (-1, 10, 4))
+        r = np.reshape(results, (-1, reso, 4))
 
         error = 0
         for y in range(reso):
             for x in range(reso):
                 v = r[y][x]
-                value = np.max(v)
+                value = np.min(v)
                 values[reso-y-1][x] = value
                 violation = violation_check_func(states[y*reso+x])
                 value_estimation = True if value < min_threshold else False
@@ -78,7 +78,7 @@ class DQN(object):
             if done: 
                 target_q = r
             else: 
-                target_q = r + self.gamma * np.max(next_q_values[i])
+                target_q = r + self.gamma * np.average(next_q_values[i])
             # update the current q-value
             current_q_values[i, a] = target_q
             
