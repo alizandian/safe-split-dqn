@@ -13,6 +13,7 @@ class AgentIterativeSafetyGraph(object):
         self.input_dim = input_dim
         self.output_dim = output_dim
         self.do_enhance_transitions = do_enhance_transitions
+        self.dimention = dimention
         self.epsilon = 1.0
         self.epsilon_min = 0.1
         self.epsilon_max = 1.0
@@ -43,8 +44,7 @@ class AgentIterativeSafetyGraph(object):
             if self.previous_action_type != 0: 
                 print("------------------------  RANDOM  -------------------------")
                 self.previous_action_type = 0
-            # return np.random.choice(self.output_dim)
-            return np.random.choice([0,1,2,3])
+            return np.random.choice(self.output_dim)
 
         else:
             if self.previous_action_type != 1: 
@@ -64,18 +64,21 @@ class AgentIterativeSafetyGraph(object):
 
     def enhance_transitions(self, transitions: List[Tuple], only_last_items = 20):
         t = transitions if len(transitions) < only_last_items else transitions[-only_last_items+1:]
-        return [[s,a, -2 if d == 1 else 0.2, n,d] for s,a,r,n,d in t]
+        return [[s,a, -2* self.safety_graph.proximity_to_unsafe_states((s,a,r,n,d)) + 1, n,d] for s,a,r,n,d in t]
 
     def train(self):
+        self.safety_graph.update()
+
         hb = self.history_buffer.get_buffer()
         tb = self.transition_buffer.get_buffer()
         transitions = self.enhance_transitions(list(tb)) if self.do_enhance_transitions else tb
         if len(hb) >= 100:
-            history = self.enhance_transitions(self.history_buffer.sample(100), 100)
-            self.dqn.learn(history, len(history))
+            history_b = self.history_buffer.sample(100)
+            history = self.enhance_transitions(history_b, 100) if self.do_enhance_transitions else history_b
+            self.dqn.learn(history, len(history), self.do_enhance_transitions)
             self.update_counter += len(history)
 
-        self.dqn.learn(transitions, len(tb))
+        self.dqn.learn(transitions, len(tb), self.do_enhance_transitions)
         self.update_counter += len(tb)
 
         if self.update_counter >= self.update_target_interval:
@@ -84,7 +87,8 @@ class AgentIterativeSafetyGraph(object):
 
         hb.extend(tb)
         self.transition_buffer.clear()
-        #self.safety_graph.visualize()
+
+        self.safety_graph.feed_neural_network_feedback(self.dqn.get_snapshot(self.dimention)[0])
 
     def add_transition(self, trans):
         self.transition_buffer.append(trans)

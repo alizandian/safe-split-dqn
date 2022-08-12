@@ -39,13 +39,14 @@ class DQN(object):
             self.Q_main.fit(input, target, verbose=0, batch_size = batch_size)
         self.update_q_target()
 
-    def get_snapshot(self, reso, violation_check_func, min_threshold):
+    def get_snapshot(self, reso, violation_check_func=None, min_threshold=None):
         values = [[0]*reso for i in range(reso)]
         states = []
         for y in range(reso):
             for x in range(reso):
-                r = reso/2
-                states.append((((x - r) / r), ((y - r) / r)))
+                d = 2 / reso
+                dd = d / 2
+                states.append(((x * d) + dd - 1, (y * d) + dd - 1))
 
         results = self.Q_main.predict(np.stack(states))
         r = np.reshape(results, (-1, reso, 4))
@@ -55,16 +56,17 @@ class DQN(object):
             for x in range(reso):
                 v = r[y][x]
                 value = np.min(v)
-                values[reso-y-1][x] = value
-                violation = violation_check_func(states[y*reso+x])
-                value_estimation = True if value < min_threshold else False
-                if violation != value_estimation: error += 1
+                values[reso-y-1][x] = v
+                if violation_check_func != None and min_threshold != None:
+                    violation = violation_check_func(states[y*reso+x])
+                    value_estimation = True if value < min_threshold else False
+                    if violation != value_estimation: error += 1
         accuracy = 100 - (error / reso * reso)
 
         return values, accuracy
 
 
-    def learn(self, transitions, batch_size = 64):
+    def learn(self, transitions, batch_size = 64, is_enhanced = False):
         # transitions is a array which must have the first four element:
         # transitions = [ tras1, tras2, tras3, ... ], where:
         # tras = [state, action, reward, next_state, done]
@@ -74,15 +76,17 @@ class DQN(object):
         current_q_values = self.Q_main.predict(current_state)
         next_q_values = self.Q_target.predict(next_state)
 
-        for i, (s, a, r, sp, done) in enumerate(transitions):
-            if done: 
-                target_q = r
-            else: 
-                target_q = r + self.gamma * np.average(next_q_values[i])
-            # update the current q-value
-            current_q_values[i, a] = target_q
+        for i, (_, a, r, _, done) in enumerate(transitions):
+            if is_enhanced:
+                current_q_values[i, a] = r
+            else:
+                if done: 
+                    target_q = r
+                else: 
+                    target_q = r + self.gamma * np.min(next_q_values[i])
+                # update the current q-value
+                current_q_values[i, a] = target_q
             
-
         result = self.Q_main.fit(current_state, current_q_values, shuffle=False, verbose=0, batch_size = batch_size)
         loss = result.history['loss'][0]
         return loss

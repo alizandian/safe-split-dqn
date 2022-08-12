@@ -9,7 +9,7 @@ import time
 
 MAX_EPISODE = 401
 VISUALISATION = True
-PLOT_INTERVAL = 100
+PLOT_INTERVAL = 25
 ARTIFICIAL_DELAY = -0.1
 plot_values: Dict[str, Dict[int, Tuple[list, float]]] = {} # values and accurace (tuple) of each episode (second dict) of each experiment (first dict).
 
@@ -58,6 +58,7 @@ def run_experiment(experiment_name, predefined_actions, agent, env):
 
         if i % PLOT_INTERVAL == 0 and i != 0: 
             record(experiment_name, i, agent, env, next_state)
+            agent.safety_graph.visualize()
             plot(only_updates=True, only_accuracy=True)
 
         rewards.append(episode_reward) 
@@ -65,9 +66,32 @@ def run_experiment(experiment_name, predefined_actions, agent, env):
     return actions, rewards
 
 def record(experiment, episode, agent, env, state):
-    values, accuracy = agent.dqn.get_snapshot(10, env.check_violation_solution, 0)
+    reso = 15
+    values, accuracy = agent.dqn.get_snapshot(reso, env.check_violation_solution, 0)
     if experiment not in plot_values: plot_values[experiment] = {}
-    plot_values[experiment][episode] = (values, accuracy)
+
+    values_up = [[0]*reso for i in range(reso)]
+    values_down = [[0]*reso for i in range(reso)]
+    values_right = [[0]*reso for i in range(reso)]
+    values_left = [[0]*reso for i in range(reso)]
+    values_min = [[0]*reso for i in range(reso)]
+    values_max = [[0]*reso for i in range(reso)]
+    values_avg = [[0]*reso for i in range(reso)]
+    for y in range(reso):
+        for x in range(reso):
+            values_up[reso-y-1][x] = values[reso-y-1][x][0]
+            values_down[reso-y-1][x] = values[reso-y-1][x][1]
+            values_right[reso-y-1][x] = values[reso-y-1][x][2]
+            values_left[reso-y-1][x] = values[reso-y-1][x][3]
+            values_min[reso-y-1][x] = np.min(values[reso-y-1][x])
+            values_max[reso-y-1][x] = np.max(values[reso-y-1][x])
+            values_avg[reso-y-1][x] = np.average(values[reso-y-1][x])
+
+    values_up = np.interp(values_up, [np.min(values_up), np.max(values_up)], [-1, +1])
+    values_down = np.interp(values_down, [np.min(values_down), np.max(values_down)], [-1, +1])
+    values_right = np.interp(values_right, [np.min(values_right), np.max(values_right)], [-1, +1])
+    values_left = np.interp(values_left, [np.min(values_left), np.max(values_left)], [-1, +1])
+    plot_values[experiment][episode] = ((values_up, values_down, values_right, values_left), accuracy)
     plot()
 
 def plot_output(values, accuracy, only_accuracy=False):
@@ -80,11 +104,19 @@ def plot_output(values, accuracy, only_accuracy=False):
     plt.colorbar()
     plt.show()
 
+def plot_output_4(values, cmap='hot', interpolation='bicubic'):
+    fig, ax = plt.subplots(2, 2)
+    ax[0, 0].imshow(values[0], cmap='hot', interpolation='sinc')
+    ax[1, 0].imshow(values[1], cmap='hot', interpolation='sinc')
+    ax[0, 1].imshow(values[2], cmap='hot', interpolation='sinc')
+    ax[1, 1].imshow(values[3], cmap='hot', interpolation='sinc')
+    plt.show() 
+
 def plot(only_updates=False, only_accuracy=False): 
     if only_updates:
         last_experiment = list(plot_values.values())[-1]
         values, accuracy = list(last_experiment.values())[-1]
-        plot_output(values, accuracy, only_accuracy)
+        plot_output_4(values, accuracy, only_accuracy)
     else:
         episodes = {}
         accuracies = {}
@@ -94,7 +126,7 @@ def plot(only_updates=False, only_accuracy=False):
             for episode, (values, accuracy) in plot_values[experiment].items():
                 episodes[experiment].append(episode)
                 accuracies[experiment].append(accuracy)
-                plot_output(values, accuracy, only_accuracy)
+                plot_output_4(values, accuracy, only_accuracy)
         for experiment in plot_values.keys():
             plt.plot(episodes[experiment], accuracies[experiment], label = experiment, linestyle="-.")
         plt.legend()

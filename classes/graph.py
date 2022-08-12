@@ -30,8 +30,34 @@ class Graph:
     def clamp(self, n, smallest, largest): return max(smallest, min(n, largest))
 
 
-    def feed_neural_network_feedback(self):
-        pass
+    def feed_neural_network_feedback(self, values):
+        reso = self.dimention
+        unsafe_q_values = []
+        for y in range(reso):
+            for x in range(reso):
+                if self.cells[x][y] == 1:
+                    unsafe_q_values.append(np.average(values[reso-y-1][x]))
+
+        mean = np.mean(unsafe_q_values)
+        min = np.min(values)
+        max = np.max(values)
+
+        PERCENT = 0.001
+
+        d = (mean - min) / (max - min)
+        dmax = self.clamp(d + (d * PERCENT), 0, 1)
+        dmin = self.clamp(d - (d * PERCENT), 0 ,1)
+
+        new_min = min + ((max - min) * dmin)
+        new_max = min + ((max - min) * dmax)
+
+        for y in range(reso):
+            for x in range(reso):
+                avg = np.average(values[reso-y-1][x])
+                if avg >= new_min and avg <= new_max:
+                    if self.cells[x][y] != 1 and self.cells[x][y] != -1:
+                        self.cells[x][y] = 1
+
 
     def get_loc(self, state):
         x = self.clamp(int((state[0] - self.mins[0]) / self.len * self.dimention), 0, self.dimention-1)
@@ -71,8 +97,6 @@ class Graph:
             self.cells[l1[0]][l1[1]] = 0
         else:
             self.cells[l1[0]][l1[1]] = 1
-        
-        self.update()
 
 
     def calculate_conflux_force(self, transition, x, y):
@@ -112,6 +136,9 @@ class Graph:
             p = np.mean(np.array([s, n]), axis=0)
             l = self.get_loc(p)
             forces = []
+
+            if self.cells[l[0]][l[1]] == -1 or self.cells[l[0]][l[1]] == 1:
+                return 1
 
             m = min(self.dimention, max_depth)
             for i in range(1, m, 1):
