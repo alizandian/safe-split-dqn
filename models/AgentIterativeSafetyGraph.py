@@ -67,7 +67,7 @@ class AgentIterativeSafetyGraph(object):
         return [[s,a, -2* self.safety_graph.proximity_to_unsafe_states((s,a,r,n,d)) + 1, n,d] for s,a,r,n,d in t]
 
     def train(self):
-        self.safety_graph.update()
+        if self.do_enhance_transitions: self.safety_graph.update()
 
         hb = self.history_buffer.get_buffer()
         tb = self.transition_buffer.get_buffer()
@@ -88,7 +88,7 @@ class AgentIterativeSafetyGraph(object):
         hb.extend(tb)
         self.transition_buffer.clear()
 
-        self.safety_graph.feed_neural_network_feedback(self.dqn.get_snapshot(self.dimention)[0])
+        if self.do_enhance_transitions: self.safety_graph.feed_neural_network_feedback(self.dqn.get_snapshot(self.dimention)[0])
 
     def add_transition(self, trans):
         self.transition_buffer.append(trans)

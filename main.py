@@ -7,23 +7,23 @@ from typing import Dict, Tuple
 import time
 
 
-MAX_EPISODE = 401
+MAX_EPISODE = 201
 VISUALISATION = True
-PLOT_INTERVAL = 25
+PLOT_INTERVAL = 100
 ARTIFICIAL_DELAY = -0.1
 plot_values: Dict[str, Dict[int, Tuple[list, float]]] = {} # values and accurace (tuple) of each episode (second dict) of each experiment (first dict).
 
 def experiment_base(predefined_actions = None):
     env = RoverEnv(seed=100)
     i_dim, o_dim, DQN_nn = SimplifiedCartPole_SafetyMonitor_NN(2,4)
-    agent = AgentIterativeSafetyGraph(i_dim, o_dim, DQN_nn, 7, do_enhance_transitions=False)
+    agent = AgentIterativeSafetyGraph(i_dim, o_dim, DQN_nn, 8, do_enhance_transitions=False)
     actions, rewards = run_experiment("base", predefined_actions, agent, env)
     return actions
 
 def experiment_enhanced_transitions(predefined_actions = None):
     env = RoverEnv(seed=100)
     i_dim, o_dim, DQN_nn = SimplifiedCartPole_SafetyMonitor_NN(2,4)
-    agent = AgentIterativeSafetyGraph(i_dim, o_dim, DQN_nn, 7)
+    agent = AgentIterativeSafetyGraph(i_dim, o_dim, DQN_nn, 8)
     actions, rewards = run_experiment("enhanced", predefined_actions, agent, env)
     return actions
 
@@ -67,7 +67,7 @@ def run_experiment(experiment_name, predefined_actions, agent, env):
 
 def record(experiment, episode, agent, env, state):
     reso = 15
-    values, accuracy = agent.dqn.get_snapshot(reso, env.check_violation_solution, 0)
+    values, accuracy = agent.dqn.get_snapshot(reso, env.check_violation_solution)
     if experiment not in plot_values: plot_values[experiment] = {}
 
     values_up = [[0]*reso for i in range(reso)]
@@ -92,7 +92,6 @@ def record(experiment, episode, agent, env, state):
     values_right = np.interp(values_right, [np.min(values_right), np.max(values_right)], [-1, +1])
     values_left = np.interp(values_left, [np.min(values_left), np.max(values_left)], [-1, +1])
     plot_values[experiment][episode] = ((values_up, values_down, values_right, values_left), accuracy)
-    plot()
 
 def plot_output(values, accuracy, only_accuracy=False):
     if only_accuracy:
@@ -104,19 +103,20 @@ def plot_output(values, accuracy, only_accuracy=False):
     plt.colorbar()
     plt.show()
 
-def plot_output_4(values, cmap='hot', interpolation='bicubic'):
+def plot_output_4(experiment_name, values, cmap='hot', interpolation='bicubic'):
     fig, ax = plt.subplots(2, 2)
     ax[0, 0].imshow(values[0], cmap='hot', interpolation='sinc')
     ax[1, 0].imshow(values[1], cmap='hot', interpolation='sinc')
     ax[0, 1].imshow(values[2], cmap='hot', interpolation='sinc')
     ax[1, 1].imshow(values[3], cmap='hot', interpolation='sinc')
+    plt.title(experiment_name)
     plt.show() 
 
 def plot(only_updates=False, only_accuracy=False): 
     if only_updates:
         last_experiment = list(plot_values.values())[-1]
         values, accuracy = list(last_experiment.values())[-1]
-        plot_output_4(values, accuracy, only_accuracy)
+        plot_output_4(list(plot_values.keys())[-1], values, accuracy, only_accuracy)
     else:
         episodes = {}
         accuracies = {}
@@ -126,7 +126,7 @@ def plot(only_updates=False, only_accuracy=False):
             for episode, (values, accuracy) in plot_values[experiment].items():
                 episodes[experiment].append(episode)
                 accuracies[experiment].append(accuracy)
-                plot_output_4(values, accuracy, only_accuracy)
+                plot_output_4(experiment, values, accuracy, only_accuracy)
         for experiment in plot_values.keys():
             plt.plot(episodes[experiment], accuracies[experiment], label = experiment, linestyle="-.")
         plt.legend()

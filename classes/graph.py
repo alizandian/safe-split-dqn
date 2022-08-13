@@ -56,7 +56,7 @@ class Graph:
                 avg = np.average(values[reso-y-1][x])
                 if avg >= new_min and avg <= new_max:
                     if self.cells[x][y] != 1 and self.cells[x][y] != -1:
-                        self.cells[x][y] = 1
+                        self.cells[x][y] = 2
 
 
     def get_loc(self, state):
@@ -137,13 +137,13 @@ class Graph:
             l = self.get_loc(p)
             forces = []
 
-            if self.cells[l[0]][l[1]] == -1 or self.cells[l[0]][l[1]] == 1:
+            if self.cells[l[0]][l[1]] in [-1, 1, 2]:
                 return 1
 
             m = min(self.dimention, max_depth)
             for i in range(1, m, 1):
                 for x,y in self.get_neighburs(l, i):
-                    if self.cells[x][y] == -1 or self.cells[x][y] == 1:
+                    if self.cells[x][y] in [-1, 1, 2]:
                         forces.append(self.calculate_conflux_force(transition, x, y) * (m-i+1) / m)
 
             if len(forces) == 0:
