@@ -4,7 +4,7 @@ import networkx as nx
 from typing import List
 from .node import Node
 
-colors = {-1: "grey", 0: "black", 1:"red", 2:"orange"}
+colors = {-1: "red", 0: "grey", 1:"white", 2:"orange"}
 
 tk_root_table = None
 tk_root_graph = None
@@ -32,7 +32,7 @@ def draw_graph(nodes: List[Node]):
     edges_labels = {}
     labels = {}
     for index, node in enumerate(nodes):
-        values = {0:"SAFE", 1:"UNSAFE", 2:"UNSURE", -1:"INCREASE RESOLUTION!"}
+        values = {1:"SAFE", -1:"UNSAFE", 0:"UNSURE", 2:"INCREASE RESOLUTION!"}
         graph_nodes.append(node.i)
         labels[index] = values[node.value]
         for n in node.nodes:

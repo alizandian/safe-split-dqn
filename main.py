@@ -9,26 +9,26 @@ import time
 
 MAX_EPISODE = 201
 VISUALISATION = True
-PLOT_INTERVAL = 100
+PLOT_INTERVAL = 50
 ARTIFICIAL_DELAY = -0.1
 plot_values: Dict[str, Dict[int, Tuple[list, float]]] = {} # values and accurace (tuple) of each episode (second dict) of each experiment (first dict).
 
 def experiment_base(predefined_actions = None):
     env = RoverEnv(seed=100)
     i_dim, o_dim, DQN_nn = SimplifiedCartPole_SafetyMonitor_NN(2,4)
-    agent = AgentIterativeSafetyGraph(i_dim, o_dim, DQN_nn, 8, do_enhance_transitions=False)
+    agent = AgentIterativeSafetyGraph(i_dim, o_dim, DQN_nn, 10, refined_experiences=False)
     actions, rewards = run_experiment("base", predefined_actions, agent, env)
     return actions
 
-def experiment_enhanced_transitions(predefined_actions = None):
+def experiment_refined_experiences(predefined_actions = None):
     env = RoverEnv(seed=100)
     i_dim, o_dim, DQN_nn = SimplifiedCartPole_SafetyMonitor_NN(2,4)
-    agent = AgentIterativeSafetyGraph(i_dim, o_dim, DQN_nn, 8)
-    actions, rewards = run_experiment("enhanced", predefined_actions, agent, env)
+    agent = AgentIterativeSafetyGraph(i_dim, o_dim, DQN_nn, 10)
+    actions, rewards = run_experiment("refined", predefined_actions, agent, env)
     return actions
 
 def run_experiment(experiment_name, predefined_actions, agent, env):
-    print(f"Running Experimen {experiment_name}") 
+    print(f"Running Experiment {experiment_name}") 
     action_index = 0
     actions = []
     rewards = []
@@ -44,14 +44,14 @@ def run_experiment(experiment_name, predefined_actions, agent, env):
                 action = agent.get_action(state)
                 actions.append(action)
             action_index += 1
-            next_state, reward, done, _ = env.step(action)
-            trans = [state, action, reward, next_state, done]
-            agent.add_transition(trans)
+            next_state, reward, violation, _ = env.step(action)
+            experience = [state, action, reward, next_state, violation]
+            agent.add_experience(experience)
             episode_reward += reward
             state = next_state
             if ARTIFICIAL_DELAY >= 0: time.sleep(ARTIFICIAL_DELAY)
             if VISUALISATION: env.render()
-            if done: 
+            if violation: 
                 agent.train()
                 break
 
@@ -59,7 +59,7 @@ def run_experiment(experiment_name, predefined_actions, agent, env):
         if i % PLOT_INTERVAL == 0 and i != 0: 
             record(experiment_name, i, agent, env, next_state)
             agent.safety_graph.visualize()
-            plot(only_updates=True, only_accuracy=True)
+            plot(only_updates=True, only_accuracy=False)
 
         rewards.append(episode_reward) 
         print("Episode {0}/{1} -- reward {2}".format(i+1, MAX_EPISODE, episode_reward)) 
@@ -70,45 +70,72 @@ def record(experiment, episode, agent, env, state):
     values, accuracy = agent.dqn.get_snapshot(reso, env.check_violation_solution)
     if experiment not in plot_values: plot_values[experiment] = {}
 
-    values_up = [[0]*reso for i in range(reso)]
     values_down = [[0]*reso for i in range(reso)]
-    values_right = [[0]*reso for i in range(reso)]
     values_left = [[0]*reso for i in range(reso)]
+    values_right = [[0]*reso for i in range(reso)]
+    values_up = [[0]*reso for i in range(reso)]
     values_min = [[0]*reso for i in range(reso)]
     values_max = [[0]*reso for i in range(reso)]
     values_avg = [[0]*reso for i in range(reso)]
     for y in range(reso):
         for x in range(reso):
-            values_up[reso-y-1][x] = values[reso-y-1][x][0]
-            values_down[reso-y-1][x] = values[reso-y-1][x][1]
+            values_down[reso-y-1][x] = values[reso-y-1][x][0]
+            values_left[reso-y-1][x] = values[reso-y-1][x][1]
             values_right[reso-y-1][x] = values[reso-y-1][x][2]
-            values_left[reso-y-1][x] = values[reso-y-1][x][3]
+            values_up[reso-y-1][x] = values[reso-y-1][x][3]
             values_min[reso-y-1][x] = np.min(values[reso-y-1][x])
             values_max[reso-y-1][x] = np.max(values[reso-y-1][x])
             values_avg[reso-y-1][x] = np.average(values[reso-y-1][x])
 
-    values_up = np.interp(values_up, [np.min(values_up), np.max(values_up)], [-1, +1])
     values_down = np.interp(values_down, [np.min(values_down), np.max(values_down)], [-1, +1])
-    values_right = np.interp(values_right, [np.min(values_right), np.max(values_right)], [-1, +1])
     values_left = np.interp(values_left, [np.min(values_left), np.max(values_left)], [-1, +1])
-    plot_values[experiment][episode] = ((values_up, values_down, values_right, values_left), accuracy)
+    values_right = np.interp(values_right, [np.min(values_right), np.max(values_right)], [-1, +1])
+    values_up = np.interp(values_up, [np.min(values_up), np.max(values_up)], [-1, +1])
+    values_min = np.interp(values_min, [np.min(values_min), np.max(values_min)], [-1, +1])
+    values_max = np.interp(values_max, [np.min(values_max), np.max(values_max)], [-1, +1])
+    values_avg = np.interp(values_avg, [np.min(values_avg), np.max(values_avg)], [-1, +1])
+    plot_values[experiment][episode] = ((values_down, values_left, values_right, values_up, values_min, values_max, values_avg), accuracy)
 
 def plot_output(values, accuracy, only_accuracy=False):
     if only_accuracy:
         print(f"accuracy: {accuracy}")
         return
 
+    print(f"accuracy: {accuracy}")
     plt.imshow(values, cmap='hot', interpolation='bicubic')
     plt.legend()
     plt.colorbar()
     plt.show()
 
-def plot_output_4(experiment_name, values, cmap='hot', interpolation='bicubic'):
-    fig, ax = plt.subplots(2, 2)
-    ax[0, 0].imshow(values[0], cmap='hot', interpolation='sinc')
-    ax[1, 0].imshow(values[1], cmap='hot', interpolation='sinc')
-    ax[0, 1].imshow(values[2], cmap='hot', interpolation='sinc')
-    ax[1, 1].imshow(values[3], cmap='hot', interpolation='sinc')
+def plot_output_4(experiment_name, values, accuracy, only_accuracy, cmap='hot', interpolation='bicubic'):
+    if only_accuracy:
+        print(f"accuracy: {accuracy}")
+        return
+
+    print(f"accuracy: {accuracy}")
+    fig, ax = plt.subplots(2, 4)
+
+    ax[0, 0].imshow(values[0], cmap='hot')
+    ax[0, 0].set_title("DOWN")
+
+    ax[0, 1].imshow(values[1], cmap='hot')
+    ax[0, 1].set_title("LEFT")
+
+    ax[0, 2].imshow(values[2], cmap='hot')
+    ax[0, 2].set_title("RIGHT")
+
+    ax[0, 3].imshow(values[3], cmap='hot')
+    ax[0, 3].set_title("UP")
+
+    ax[1, 0].imshow(values[4], cmap='hot', interpolation='sinc')
+    ax[1, 0].set_title("MIN")
+
+    ax[1, 1].imshow(values[5], cmap='hot', interpolation='sinc')
+    ax[1, 1].set_title("MAX")
+
+    ax[1, 2].imshow(values[6], cmap='hot', interpolation='sinc')
+    ax[1, 2].set_title("AVG")
+
     plt.title(experiment_name)
     plt.show() 
 
@@ -133,6 +160,6 @@ def plot(only_updates=False, only_accuracy=False):
         plt.show()
 
 if __name__ == "__main__":
-    actions = experiment_enhanced_transitions()
+    actions = experiment_refined_experiences()
     actions = experiment_base(predefined_actions=actions)
     plot()

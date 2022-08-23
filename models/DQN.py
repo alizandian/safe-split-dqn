@@ -54,7 +54,7 @@ class DQN(object):
         min = np.min(r)
         max = np.max(r)
 
-        min_threshold = (max - min) * 0.5
+        min_threshold = min + ((max - min) * 0.5)
 
         error = 0
         for y in range(reso):
@@ -66,7 +66,7 @@ class DQN(object):
                     violation = violation_check_func(states[y*reso+x])
                     value_estimation = True if value < min_threshold else False
                     if violation != value_estimation: error += 1
-        accuracy = 100 - (error / (reso * reso))
+        accuracy = (1 - (error / (reso * reso))) * 100
 
         return values, accuracy
 

@@ -6,13 +6,13 @@ import numpy as np
 import configparser
 
 class AgentIterativeSafetyGraph(object):
-    def __init__(self, input_dim, output_dim, nn_model, dimention, do_enhance_transitions=True, gamma = 0.8, replay_buffer_size = 200, verbose = False):
+    def __init__(self, input_dim, output_dim, nn_model, dimention, refined_experiences=True, gamma = 0.8, replay_buffer_size = 200, verbose = False):
         config = configparser.ConfigParser()
         config.read('config.ini')
 
         self.input_dim = input_dim
         self.output_dim = output_dim
-        self.do_enhance_transitions = do_enhance_transitions
+        self.refined_experiences = refined_experiences
         self.dimention = dimention
         self.epsilon = 1.0
         self.epsilon_min = 0.1
@@ -25,9 +25,9 @@ class AgentIterativeSafetyGraph(object):
         self.update_target_interval = 200
         self.previous_action_type = -1
         self.history_buffer = ReplayBuffer(1000)
-        self.transition_buffer = ReplayBuffer(replay_buffer_size)
+        self.experience_buffer = ReplayBuffer(replay_buffer_size)
         self.dqn = DQN(input_dim = input_dim, output_dim = output_dim, nn_model = nn_model, gamma = gamma, verbose = verbose)
-        self.safety_graph = Graph((dimention), (-1, -1), (1, 1))
+        self.safety_graph = Graph(output_dim, (dimention), (-1, -1), (1, 1))
 
     def __clamp(self, n, smallest, largest): return max(smallest, min(n, largest))
 
@@ -62,23 +62,23 @@ class AgentIterativeSafetyGraph(object):
             else:
                 return np.random.choice(possibles)
 
-    def enhance_transitions(self, transitions: List[Tuple], only_last_items = 20):
-        t = transitions if len(transitions) < only_last_items else transitions[-only_last_items+1:]
+    def refine_experiences(self, experiences: List[Tuple], only_last_items = 20):
+        t = experiences if len(experiences) < only_last_items else experiences[-only_last_items+1:]
         return [[s,a, -2* self.safety_graph.proximity_to_unsafe_states((s,a,r,n,d)) + 1, n,d] for s,a,r,n,d in t]
 
     def train(self):
-        if self.do_enhance_transitions: self.safety_graph.update()
+        if self.refined_experiences: self.safety_graph.update()
 
         hb = self.history_buffer.get_buffer()
-        tb = self.transition_buffer.get_buffer()
-        transitions = self.enhance_transitions(list(tb)) if self.do_enhance_transitions else tb
+        tb = self.experience_buffer.get_buffer()
+        experiences = self.refine_experiences(list(tb)) if self.refined_experiences else tb
         if len(hb) >= 100:
             history_b = self.history_buffer.sample(100)
-            history = self.enhance_transitions(history_b, 100) if self.do_enhance_transitions else history_b
-            self.dqn.learn(history, len(history), self.do_enhance_transitions)
+            history = self.refine_experiences(history_b, 100) if self.refined_experiences else history_b
+            self.dqn.learn(history, len(history), self.refined_experiences)
             self.update_counter += len(history)
 
-        self.dqn.learn(transitions, len(tb), self.do_enhance_transitions)
+        self.dqn.learn(experiences, len(tb), self.refined_experiences)
         self.update_counter += len(tb)
 
         if self.update_counter >= self.update_target_interval:
@@ -86,13 +86,13 @@ class AgentIterativeSafetyGraph(object):
             self.update_counter = 0
 
         hb.extend(tb)
-        self.transition_buffer.clear()
+        self.experience_buffer.clear()
 
-        if self.do_enhance_transitions: self.safety_graph.feed_neural_network_feedback(self.dqn.get_snapshot(self.dimention)[0])
+        if self.refined_experiences: self.safety_graph.feed_neural_network_feedback(self.dqn.get_snapshot(self.dimention)[0])
 
-    def add_transition(self, trans):
-        self.transition_buffer.append(trans)
-        self.safety_graph.add_transitions(trans[0], trans[3], trans[4])
+    def add_experience(self, e):
+        self.experience_buffer.append(e)
+        self.safety_graph.add_experience(e)
 
     def random_action(self):
         return np.random.randint(self.output_dim)

@@ -1,4 +1,5 @@
 from __future__ import annotations
+from itertools import count
 from typing import List, Tuple, Dict
 from .node import Node, Region
 from classes.visualization import draw_graph, draw_table, draw_graph_grid
@@ -7,28 +8,27 @@ import numpy as np
 class Graph:
     cells: List[List[int]] = None
 
-    def __init__(self, dimention, mins, maxes, transitions = None) -> None:
+    def __init__(self, actions_count, dimention, mins, maxes, experiences = None) -> None:
         self.dimention = dimention
         self.mins = mins
         self.maxes = maxes
         self.len = maxes[0] - mins[0]
         self.teil = self.len / dimention
         self.nodes: List[Node] = []
-        self.transition_count = 0
-        self.transitions = {} # a dictionary, key is a tuple of locations, originating cell and target cell, value is a list of bool, indicating violation
-        self.transitions_full = {}
-        self.transitions_from = {}
-        self.transitions_from_full = {}
-        self.cells = [[0 for i in range(dimention)] for j in range(dimention)] # first x then y
-        self.graphs: Dict[Tuple, Graph] = {} # a dictionary, key is location, value would be another grid 
+        self.experience_count = 0
+        self.actions_count = actions_count
+        self.origins = {}
+        self.targets = {}
+        self.experiences = [[[[] for _ in range(actions_count)] for _ in range(dimention)] for _ in range(dimention)]
+        self.cells = [[[0 for _ in range(actions_count)] for _ in range(dimention)] for _ in range(dimention)]
+        self.graphs: Dict[Tuple, Graph] = {} 
 
-        if transitions != None:
-            for t in transitions:
-                self.add_transitions(t[0], t[1], t[2])
+        if experiences != None:
+            for t in experiences:
+                self.add_experience(t[0], t[1], t[2])
 
 
     def clamp(self, n, smallest, largest): return max(smallest, min(n, largest))
-
 
     def feed_neural_network_feedback(self, values):
         reso = self.dimention
@@ -42,7 +42,7 @@ class Graph:
         min = np.min(values)
         max = np.max(values)
 
-        PERCENT = 0.001
+        PERCENT = 0.0005
 
         d = (mean - min) / (max - min)
         dmax = self.clamp(d + (d * PERCENT), 0, 1)
@@ -58,53 +58,94 @@ class Graph:
                     if self.cells[x][y] != 1 and self.cells[x][y] != -1:
                         self.cells[x][y] = 2
 
-
     def get_loc(self, state):
         x = self.clamp(int((state[0] - self.mins[0]) / self.len * self.dimention), 0, self.dimention-1)
         y = self.clamp(int((state[1] - self.mins[1]) / self.len * self.dimention), 0, self.dimention-1)
 
         return (x, y)
 
-    def add_transitions(self, state1, state2, violation):
-        l1 = self.get_loc(state1)
-        l2 = self.get_loc(state2)
-        t = (l1, l2) 
+    def is_safe(self, location):
+        safe_counts = 0
+        unsafe_counts = 0
+        unsure_counts = 0
+        counts = 0
+        for a in self.cells[location[0]][location[1]]:
+            counts += 1
+            if a == -1: unsafe_counts += 1
+            elif a == 0: unsure_counts += 1
+            elif a == 1: safe_counts += 1
 
-        if t not in self.transitions: self.transitions[t] = []
-        if t not in self.transitions_full: self.transitions_full[t] = []
-        if l1 not in self.transitions_from: self.transitions_from[l1] = []
-        if l1 not in self.transitions_from_full: self.transitions_from_full[l1] = []
-
-        transition = (state1, state2, violation)
-
-        self.transitions[t].append(violation)
-        self.transitions_full[t].append(transition)
-        self.transitions_from[l1].append(violation)
-        self.transitions_from_full[l1].append(transition)
-        self.transition_count += 1
-
-        l = len(self.transitions_from[l1])
-        s = sum(self.transitions_from[l1])
-
-        if l > 30 and s != 0 and s != l:
-            self.cells[l1[0]][l1[1]] = -1
-            if l1 not in self.graphs: 
-                mins = ((l1[0] * self.teil) + self.mins[0], (l1[1] * self.teil) + self.mins[1])
-                maxes = (((l1[0] + 1) * self.teil) + self.mins[0], ((l1[1] + 1) * self.teil) + self.mins[1])
-                self.graphs[l1] = Graph(5, mins, maxes, self.transitions_from_full[l1])
-            self.graphs[l1].add_transitions(state1, state2, violation)
-        elif s == 0:
-            self.cells[l1[0]][l1[1]] = 0
+        if safe_counts > 0:
+            return 1
+        elif unsafe_counts == count:
+            return -1
         else:
-            self.cells[l1[0]][l1[1]] = 1
+            return 0
 
+    def update_location(self, location):
+        if location in self.origins:
+            for origin, action in self.origins[location]:
+                self.evaluate_location(origin, action)
 
-    def calculate_conflux_force(self, transition, x, y):
+    def evaluate_location(self, location, action):
+        safe_counts = 0
+        unsafe_counts = 0
+        unsure_counts = 0
+        for target, a in self.targets[location]:
+            if action == a:
+                s = self.is_safe(target)
+                if s == -1: unsafe_counts += 1
+                elif s == 1: safe_counts += 1
+                else: unsure_counts += 1
+
+        previous_value = self.cells[location[0]][location[1]][action]
+        if unsafe_counts > 0:
+            self.cells[location[0]][location[1]][action] = -1
+        else:
+            self.cells[location[0]][location[1]][action] = 1
+
+        if previous_value != self.cells[location[0]][location[1]][action]:
+            self.update_location(location)
+        
+
+    def add_experience(self, experience):
+        state, action, _, next_state, violation = experience
+        origin = self.get_loc(state)
+        target = self.get_loc(next_state)
+        self.experiences[origin[0]][origin[1]][action].append(experience)
+        self.experience_count += 1
+
+        if target not in self.origins: self.origins[target] = set()
+        self.origins[target].add((origin, action))
+        if origin not in self.targets: self.targets[origin] = set()
+        self.targets[origin].add((target, action))
+
+        # if c > 30 and unsafe_count > 0 and safe_count > 0:
+        #     self.cells[l[0]][l[1]][action] = -1
+        #     if l not in self.graphs: 
+        #         mins = ((l[0] * self.teil) + self.mins[0], (l[1] * self.teil) + self.mins[1])
+        #         maxes = (((l[0] + 1) * self.teil) + self.mins[0], ((l[1] + 1) * self.teil) + self.mins[1])
+        #         self.graphs[l] = Graph(5, mins, maxes, self.experiences_from_full[l])
+        #     self.graphs[l].add_experience(state, next_state, violation)
+        # elif s == 0:
+        #     self.cells[l[0]][l[1]] = 0
+        # else:
+        #     self.cells[l[0]][l[1]] = 1
+
+        if self.cells[origin[0]][origin[1]][action] == -1:
+            return
+        elif violation == 1:
+            self.cells[origin[0]][origin[1]][action] = -1
+            self.update_location(origin)
+        else:
+            self.evaluate_location(origin, action)
+
+    def calculate_conflux_force(self, experience, x, y):
         """
         TODO: Not yet dimention free
         returning a value between -1 and 1. 0
         """
-        s, _, _, n, d = transition
+        s, _, _, n, d = experience
         p = np.mean(np.array([s, n]), axis=0)
         l = self.get_loc(p)
         dx = n[0] - s[0]
@@ -121,7 +162,7 @@ class Graph:
         force = xforce + yforce
         return self.clamp(force, -1, 1)
 
-    def proximity_to_unsafe_states(self, transition, max_depth = 5):
+    def proximity_to_unsafe_states(self, transition, max_depth = 10):
         """
         TODO: Not yet dimention free
         calculates the significance of the transition regarded to unsafe states. 1 max, 0 min
@@ -137,19 +178,23 @@ class Graph:
             l = self.get_loc(p)
             forces = []
 
-            if self.cells[l[0]][l[1]] in [-1, 1, 2]:
+            if self.is_safe(l):
                 return 1
 
             m = min(self.dimention, max_depth)
             for i in range(1, m, 1):
                 for x,y in self.get_neighburs(l, i):
-                    if self.cells[x][y] in [-1, 1, 2]:
+                    if self.is_safe((x,y)):
                         forces.append(self.calculate_conflux_force(transition, x, y) * (m-i+1) / m)
 
             if len(forces) == 0:
                 return 0
             else:
-                return float(sum(forces)/len(forces))
+                f = float(sum(forces)/len(forces))
+                if f >= 0.8:
+                    return 1
+                else:
+                    return 0
 
     def visualize(self):
         #draw_table(self.cells)
@@ -196,15 +241,15 @@ class Graph:
                 l = (i, j)
                 if l in assigned: continue
                 assigned.append(l)
-                value = self.cells[i][j]
-                node = Node(value)
+                is_safe = self.is_safe(l)
+                node = Node(is_safe)
                 nodes.append(node)
                 node.add_region(Region(i, i+1, j, j+1))
 
                 ns = self.get_neighburs(l)
                 while len(ns) != 0:
                     ns = list(dict.fromkeys(ns))
-                    ns = [(x,y) for x,y in ns if value == self.cells[x][y]]
+                    ns = [(x,y) for x,y in ns if is_safe == self.is_safe((x,y))]
 
                     new_ns = []
                     for (x, y) in ns:

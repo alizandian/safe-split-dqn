@@ -109,10 +109,13 @@ class RoverEnv(gym.Env):
         r = random.uniform(15.0, 25.0)
 
         # 0 bot, 1 left,  2 right, 3 top
-        if action == 0: y -= r
-        elif action == 1: x -= r
-        elif action == 2: x += r
-        else: y += r
+        if y < -30:
+            x += r
+        else:
+            if action == 0: y -= r
+            elif action == 1: x -= r
+            elif action == 2: x += r
+            else: y += r
 
         return (x,y)
 
