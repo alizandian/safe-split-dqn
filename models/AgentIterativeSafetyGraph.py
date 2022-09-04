@@ -15,12 +15,12 @@ class AgentIterativeSafetyGraph(object):
         self.refined_experiences = refined_experiences
         self.dimention = dimention
         self.epsilon = 1.0
-        self.epsilon_min = 0.1
+        self.epsilon_min = 0.05
         self.epsilon_max = 1.0
         self.epsilon_interval = (self.epsilon_max - self.epsilon_min)
         self.frame_count = 0
-        self.epsilon_random_frames = 7000 #2000
-        self.epsilon_greedy_frames = 10000 #5000
+        self.epsilon_random_frames = 1000 
+        self.epsilon_greedy_frames = 2000
         self.update_counter = 0
         self.update_target_interval = 200
         self.previous_action_type = -1
@@ -56,15 +56,17 @@ class AgentIterativeSafetyGraph(object):
             # if mask.count(1) == 0: return np.argmax(q_val)
                 
             # return np.argmax(final_action_q_val)
-            possibles = [i for i in range(len(q_val)) if q_val[i] > theta]
+
+            possibles = self.safety_graph.get_safe_actions(input)
             if len(possibles) == 0:
                 return np.argmax(q_val)
             else:
                 return np.random.choice(possibles)
 
+
     def refine_experiences(self, experiences: List[Tuple], only_last_items = 20):
         t = experiences if len(experiences) < only_last_items else experiences[-only_last_items+1:]
-        return [[s,a, -2* self.safety_graph.proximity_to_unsafe_states((s,a,r,n,d)) + 1, n,d] for s,a,r,n,d in t]
+        return [[s,a, self.safety_graph.transition_safety((s,a,r,n,d)), n,d] for s,a,r,n,d in t]
 
     def train(self):
         if self.refined_experiences: self.safety_graph.update()

@@ -82,15 +82,12 @@ class DQN(object):
         next_q_values = self.Q_target.predict(next_state)
 
         for i, (_, a, r, _, done) in enumerate(transitions):
-            if is_enhanced:
-                current_q_values[i, a] = r
-            else:
-                if done: 
-                    target_q = r
-                else: 
-                    target_q = r + self.gamma * np.min(next_q_values[i])
-                # update the current q-value
-                current_q_values[i, a] = target_q
+            if done: 
+                target_q = r
+            else: 
+                target_q = r + self.gamma * np.min(next_q_values[i])
+            # update the current q-value
+            current_q_values[i, a] = target_q
             
         result = self.Q_main.fit(current_state, current_q_values, shuffle=False, verbose=0, batch_size = batch_size)
         loss = result.history['loss'][0]

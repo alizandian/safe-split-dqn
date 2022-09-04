@@ -30,19 +30,35 @@ class Graph:
 
     def clamp(self, n, smallest, largest): return max(smallest, min(n, largest))
 
+    def get_safe_actions(self, state) -> list:
+        location = self.get_loc(state)
+        safe_actions = []
+        for a, value in enumerate(self.cells[location[0]][location[1]]):
+            if value != -1:
+                safe_actions.append(a)
+        return safe_actions
+
     def feed_neural_network_feedback(self, values):
         reso = self.dimention
         unsafe_q_values = []
         for y in range(reso):
             for x in range(reso):
-                if self.cells[x][y] == 1:
-                    unsafe_q_values.append(np.average(values[reso-y-1][x]))
+                for a in range(self.actions_count):
+                    if self.cells[x][y][a] == -1:
+                        unsafe_q_values.append(values[reso-y-1][x][a])
+
+        if len(unsafe_q_values) == 0:
+            return
 
         mean = np.mean(unsafe_q_values)
         min = np.min(values)
         max = np.max(values)
 
-        PERCENT = 0.0005
+        if min > -0.9:
+            print(mean)
+            return
+
+        PERCENT = 0.001
 
         d = (mean - min) / (max - min)
         dmax = self.clamp(d + (d * PERCENT), 0, 1)
@@ -53,10 +69,11 @@ class Graph:
 
         for y in range(reso):
             for x in range(reso):
-                avg = np.average(values[reso-y-1][x])
-                if avg >= new_min and avg <= new_max:
-                    if self.cells[x][y] != 1 and self.cells[x][y] != -1:
-                        self.cells[x][y] = 2
+                for a in range(self.actions_count):
+                    v = values[reso-y-1][x][a]
+                    if v >= new_min and v <= new_max:
+                        if self.cells[x][y][a] != -1:
+                            self.cells[x][y][a] = -1
 
     def get_loc(self, state):
         x = self.clamp(int((state[0] - self.mins[0]) / self.len * self.dimention), 0, self.dimention-1)
@@ -77,7 +94,7 @@ class Graph:
 
         if safe_counts > 0:
             return 1
-        elif unsafe_counts == count:
+        elif unsafe_counts == counts:
             return -1
         else:
             return 0
@@ -99,15 +116,15 @@ class Graph:
                 else: unsure_counts += 1
 
         previous_value = self.cells[location[0]][location[1]][action]
-        if unsafe_counts > 0:
-            self.cells[location[0]][location[1]][action] = -1
-        else:
-            self.cells[location[0]][location[1]][action] = 1
+        if previous_value != -1:
+            if unsafe_counts > 0:
+                self.cells[location[0]][location[1]][action] = -1
+            else:
+                self.cells[location[0]][location[1]][action] = 1
 
         if previous_value != self.cells[location[0]][location[1]][action]:
             self.update_location(location)
         
-
     def add_experience(self, experience):
         state, action, _, next_state, violation = experience
         origin = self.get_loc(state)
@@ -162,7 +179,7 @@ class Graph:
         force = xforce + yforce
         return self.clamp(force, -1, 1)
 
-    def proximity_to_unsafe_states(self, transition, max_depth = 10):
+    def transition_safety(self, transition, max_depth = 4):
         """
         TODO: Not yet dimention free
         calculates the significance of the transition regarded to unsafe states. 1 max, 0 min
@@ -172,29 +189,25 @@ class Graph:
         """
         s, _, _, n, d = transition
         if d == True:
-            return 1
+            return -1
         else:
             p = np.mean(np.array([s, n]), axis=0)
             l = self.get_loc(p)
             forces = []
 
-            if self.is_safe(l):
-                return 1
+            if self.is_safe(self.get_loc(n)) == -1:
+                return -1
 
             m = min(self.dimention, max_depth)
             for i in range(1, m, 1):
                 for x,y in self.get_neighburs(l, i):
-                    if self.is_safe((x,y)):
+                    if self.is_safe((x,y)) == -1:
                         forces.append(self.calculate_conflux_force(transition, x, y) * (m-i+1) / m)
 
             if len(forces) == 0:
                 return 0
             else:
-                f = float(sum(forces)/len(forces))
-                if f >= 0.8:
-                    return 1
-                else:
-                    return 0
+                return float(sum(forces)/len(forces)) * -1
 
     def visualize(self):
         #draw_table(self.cells)

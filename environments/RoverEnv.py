@@ -25,8 +25,8 @@ class RoverEnv(gym.Env):
         Num   Action
         0     Move BOTTOM a random amount between 15 and 25
         1     Move LEFT a random amount between 15 and 25
-        3     Move RIGHT a random amount between 15 and 25
-        4     Move TOP a random amount between 15 and 25
+        2     Move RIGHT a random amount between 15 and 25
+        3     Move TOP a random amount between 15 and 25
 
     Reward:
         Reward is 1 for every step taken.
@@ -106,11 +106,13 @@ class RoverEnv(gym.Env):
     def move(self, action, state):
         x, y = state
 
-        r = random.uniform(15.0, 25.0)
+        r = 20
 
         # 0 bot, 1 left,  2 right, 3 top
-        if y < -30:
-            x += r
+        if y < -20:
+            y -= r
+        elif x < -20:
+            x -= r
         else:
             if action == 0: y -= r
             elif action == 1: x -= r
