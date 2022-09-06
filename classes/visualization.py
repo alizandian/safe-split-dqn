@@ -33,14 +33,16 @@ def draw_graph(nodes: List[Node]):
     formulas = []
     formulas_index = 0
     labels = {}
-    for index, node in enumerate(nodes):
+    for node in nodes:
         values = {1:"SAFE", -1:"UNSAFE", 0:"UNSURE", 2:"INCREASE RESOLUTION!"}
-        graph_nodes.append(node.i)
+        index = nodes.index(node)
+        graph_nodes.append(index)
         labels[index] = values[node.value]
         for n in node.nodes:
-            graph_edges.append((node.i, n.i))
+            i = nodes.index(n)
+            graph_edges.append((index, i))
             formulas.append(n.region_formula_text())
-            edges_labels[(node.i, n.i)] = str(formulas_index)
+            edges_labels[(index, i)] = str(formulas_index)
             formulas_index += 1
 
     G = nx.Graph()

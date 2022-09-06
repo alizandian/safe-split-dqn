@@ -4,9 +4,7 @@ import numpy as np
 
 class DQN(object):
 
-    def __init__(self, input_dim, output_dim, nn_model, 
-                optimizer = 'adam', loss_function = 'mse', gamma = 0.5,
-                verbose=False):
+    def __init__(self, input_dim, output_dim, nn_model, gamma, optimizer = 'adam', loss_function = 'mse', verbose=False):
 
         self.input_dim = input_dim
         self.output_dim = output_dim
@@ -71,7 +69,7 @@ class DQN(object):
         return values, accuracy
 
 
-    def learn(self, transitions, batch_size = 64, is_enhanced = False):
+    def learn(self, transitions, batch_size = 64):
         # transitions is a array which must have the first four element:
         # transitions = [ tras1, tras2, tras3, ... ], where:
         # tras = [state, action, reward, next_state, done]

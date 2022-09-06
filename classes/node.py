@@ -1,4 +1,5 @@
 from __future__ import annotations
+from glob import glob
 from typing import List, Set
 
 class Region:
@@ -31,15 +32,11 @@ class Region:
             return True
         return False
 
-
 class Node:
-    index = 0
-    def __init__(self, v) -> None:
+    def __init__(self, value) -> None:
         self.regions: List[Region] = []
         self.nodes: Set[Node] = []
-        self.value = v
-        self.i = Node.index
-        Node.index += 1
+        self.value = value
 
     def __str__(self):
         return self.region_formula_text()

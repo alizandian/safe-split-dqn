@@ -16,14 +16,14 @@ plot_values: Dict[str, Dict[int, Tuple[list, float]]] = {} # values and accurace
 def experiment_base(predefined_actions = None):
     env = RoverEnv(seed=100)
     i_dim, o_dim, DQN_nn = SimplifiedCartPole_SafetyMonitor_NN(2,4)
-    agent = AgentIterativeSafetyGraph(i_dim, o_dim, DQN_nn, 8, refined_experiences=False)
+    agent = AgentIterativeSafetyGraph(i_dim, o_dim, DQN_nn, 15, refined_experiences=False)
     actions, rewards = run_experiment("base", predefined_actions, agent, env)
     return actions
 
 def experiment_refined_experiences(predefined_actions = None):
     env = RoverEnv(seed=100)
     i_dim, o_dim, DQN_nn = SimplifiedCartPole_SafetyMonitor_NN(2,4)
-    agent = AgentIterativeSafetyGraph(i_dim, o_dim, DQN_nn, 8)
+    agent = AgentIterativeSafetyGraph(i_dim, o_dim, DQN_nn, 15)
     actions, rewards = run_experiment("refined", predefined_actions, agent, env)
     return actions
 

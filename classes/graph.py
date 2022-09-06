@@ -1,8 +1,7 @@
 from __future__ import annotations
-from itertools import count
 from typing import List, Tuple, Dict
 from .node import Node, Region
-from classes.visualization import draw_graph, draw_table, draw_graph_grid
+from classes.visualization import draw_graph, draw_graph_grid
 import numpy as np
 
 class Graph:
@@ -21,12 +20,11 @@ class Graph:
         self.targets = {}
         self.experiences = [[[[] for _ in range(actions_count)] for _ in range(dimention)] for _ in range(dimention)]
         self.cells = [[[0 for _ in range(actions_count)] for _ in range(dimention)] for _ in range(dimention)]
-        self.graphs: Dict[Tuple, Graph] = {} 
+        #self.graphs: Dict[Tuple, Graph] = {} 
 
         if experiences != None:
             for t in experiences:
                 self.add_experience(t)
-
 
     def clamp(self, n, smallest, largest): return max(smallest, min(n, largest))
 
@@ -39,13 +37,12 @@ class Graph:
         return safe_actions
 
     def feed_neural_network_feedback(self, values):
-        reso = self.dimention
         unsafe_q_values = []
-        for y in range(reso):
-            for x in range(reso):
+        for y in range(self.dimention):
+            for x in range(self.dimention):
                 for a in range(self.actions_count):
                     if self.cells[x][y][a] == -1:
-                        unsafe_q_values.append(values[reso-y-1][x][a])
+                        unsafe_q_values.append(values[self.dimention-y-1][x][a])
 
         if len(unsafe_q_values) == 0:
             return
@@ -54,10 +51,11 @@ class Graph:
         min = np.min(values)
         max = np.max(values)
 
-        if min > -0.8:
+        print(min)
+        if min > -0.6:
             return
 
-        PERCENT = 0.004
+        PERCENT = 0.008
 
         d = (mean - min) / (max - min)
         dmax = self.clamp(d + (d * PERCENT), 0, 1)
@@ -66,10 +64,10 @@ class Graph:
         new_min = min + ((max - min) * dmin)
         new_max = min + ((max - min) * dmax)
 
-        for y in range(reso):
-            for x in range(reso):
+        for y in range(self.dimention):
+            for x in range(self.dimention):
                 for a in range(self.actions_count):
-                    v = values[reso-y-1][x][a]
+                    v = values[self.dimention-y-1][x][a]
                     if v >= new_min and v <= new_max:
                         if self.cells[x][y][a] == 0:
                             self.cells[x][y][a] = -1
@@ -125,8 +123,20 @@ class Graph:
         if previous_value != self.cells[location[0]][location[1]][action]:
             self.update_location(location)
         
+    def get_unsafe_bound_experiences(self):
+        exs = []
+        for y in range(self.dimention):
+            for x in range(self.dimention): 
+                if self.is_safe((x, y)) == 1:
+                    for a in range(self.actions_count):
+                        if self.cells[x][y][a] == -1:
+                            unsafes = [(s,a,r,n,v) for s,a,r,n,v in self.refine_experiences(self.experiences[x][y][a]) if v == 1]
+                            if len(unsafes) > 0:
+                                exs.append(unsafes[-1])
+        return exs
+
     def add_experience(self, experience):
-        state, action, _, next_state, violation = experience
+        state, action, _, next_state, violation = self.refine_experiences([experience])[0]
         origin = self.get_loc(state)
         target = self.get_loc(next_state)
         self.experiences[origin[0]][origin[1]][action].append(experience)
@@ -137,17 +147,17 @@ class Graph:
         if origin not in self.targets: self.targets[origin] = set()
         self.targets[origin].add((target, action))
 
-        if origin in self.graphs:
-            self.graphs[origin].add_experience(experience)
-        else:
-            xps = self.experiences[origin[0]][origin[1]][action]
-            violating_xps = [x for x in xps if x[4] == 1]
-            c = len(xps)
-            v = len(violating_xps)
-            if c > self.dimention * 5 and v != c and v != 0:
-                mins = ((origin[0] * self.teil) + self.mins[0], (origin[1] * self.teil) + self.mins[1])
-                maxes = (((origin[0] + 1) * self.teil) + self.mins[0], ((origin[1] + 1) * self.teil) + self.mins[1])
-                self.graphs[origin] = Graph(max(self.dimention/2, 2), mins, maxes, xps)
+        # if origin in self.graphs:
+        #     self.graphs[origin].add_experience(experience)
+        # else:
+        #     xps = self.experiences[origin[0]][origin[1]][action]
+        #     violating_xps = [x for x in xps if x[4] == 1]
+        #     c = len(xps)
+        #     v = len(violating_xps)
+        #     if c > self.dimention * 5 and v != c and v != 0:
+        #         mins = ((origin[0] * self.teil) + self.mins[0], (origin[1] * self.teil) + self.mins[1])
+        #         maxes = (((origin[0] + 1) * self.teil) + self.mins[0], ((origin[1] + 1) * self.teil) + self.mins[1])
+        #         self.graphs[origin] = Graph(self.actions_count, max(self.dimention/2, 2), mins, maxes, xps)
 
         if self.cells[origin[0]][origin[1]][action] == -1:
             return
@@ -179,38 +189,44 @@ class Graph:
         force = xforce + yforce
         return self.clamp(force, -1, 1)
 
-    def transition_safety(self, transition, max_depth = 4):
-        """
-        TODO: Not yet dimention free
-        calculates the significance of the transition regarded to unsafe states. 1 max, 0 min
-        Only considering the first layer of accuracy of the grid, (not considering increase resolutions) for performance sake
+    def get_action_value(self, state, action):
+        l = self.get_loc(state)
+        # if l in self.graphs:
+        #     return self.graphs[l].get_action_value(state, action)
+        # else:
+        #     return self.cells[l[0]][l[1]][action]
+        return self.cells[l[0]][l[1]][action]
 
-        Optimizatino potential here. Should we consider all cells or just a rough position of nodes is enough?
-        """
-        s, _, _, n, d = transition
-        if d == True:
-            return -1
-        else:
-            p = np.mean(np.array([s, n]), axis=0)
-            l = self.get_loc(p)
-            forces = []
+    def is_state_safe(self, state):
+        l = self.get_loc(state)
+        # if l in self.graphs:
+        #     return self.graphs[l].is_state_safe(state)
+        # else:
+        #     return self.is_safe(l)
+        return self.is_safe(l)
 
-            if self.is_safe(self.get_loc(n)) == -1:
-                return -1
+    def refine_experiences(self, experiences):
+        refined_experiences = []
 
-            m = min(self.dimention, max_depth)
-            for i in range(1, m, 1):
-                for x,y in self.get_neighburs(l, i):
-                    if self.is_safe((x,y)) == -1:
-                        forces.append(self.calculate_conflux_force(transition, x, y) * (m-i+1) / m)
-
-            if len(forces) == 0:
-                return 0
+        for s, a, r, n, d in experiences:
+            reward = r
+            done = d
+            if d == True:
+                reward = -1
+            elif self.get_action_value(s, a) == -1:
+                done = 1
+                reward = -1
+            elif self.is_state_safe(n) != 1:
+                done = 0
+                reward = -0.5
             else:
-                return float(sum(forces)/len(forces)) * -1
+                reward = 1
+            
+            refined_experiences.append((s, a, reward, n, done))
+
+        return refined_experiences
 
     def visualize(self):
-        #draw_table(self.cells)
         draw_graph(self.nodes)
         draw_graph_grid(self.nodes, (self.dimention, self.dimention))
 
@@ -254,10 +270,10 @@ class Graph:
                 l = (i, j)
                 if l in assigned: continue
                 assigned.append(l)
-                if l in self.graphs:
-                    self.graphs[l].update()
-                    nodes.extend(self.graphs[l].nodes)
-                    continue
+                # if l in self.graphs:
+                #     self.graphs[l].update()
+                #     nodes.extend(self.graphs[l].nodes)
+                #     continue
                 is_safe = self.is_safe(l)
                 node = Node(is_safe)
                 nodes.append(node)
@@ -279,28 +295,27 @@ class Graph:
                         new_ns.extend(neighburs)
                     ns = new_ns
 
-        merged = False
-        while True:
-            if not merged: break
-            out = []
-            to_be_checked: List[Node] = []
-            to_be_checked.extend(nodes)
+        # merged = False
+        # while True:
+        #     if not merged: break
+        #     out = []
+        #     to_be_checked: List[Node] = []
+        #     to_be_checked.extend(nodes)
 
-            while len(to_be_checked) != 0:
-                n = to_be_checked.pop()
-                m = []
-                for nn in to_be_checked:
-                    if n.is_adjacent(nn):
-                        if n.value == nn.value:
-                            n = n.merge(nn)
-                            m.append(nn)
-                            merged = True
+        #     while len(to_be_checked) != 0:
+        #         n = to_be_checked.pop()
+        #         m = []
+        #         for nn in to_be_checked:
+        #             if n.is_adjacent(nn):
+        #                 if n.value == nn.value:
+        #                     n = n.merge(nn)
+        #                     m.append(nn)
+        #                     merged = True
 
-                out.append(n)
-                to_be_checked = [t for t in to_be_checked if t not in m]
+        #         out.append(n)
+        #         to_be_checked = [t for t in to_be_checked if t not in m]
             
-            nodes = out
-
+        #     nodes = out
 
         for n1 in nodes:
             for n2 in nodes:
@@ -309,11 +324,3 @@ class Graph:
                     n1.add_node(n2)
                     
         self.nodes = nodes
-
-
-
-
-
-
-
-

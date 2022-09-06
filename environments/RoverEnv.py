@@ -109,10 +109,9 @@ class RoverEnv(gym.Env):
         r = 30
 
         # 0 bot, 1 left,  2 right, 3 top
-        if y < -20:
+        if y < -50:
             y -= r
-        elif x < -20:
-            x -= r
+
         else:
             if action == 0: y -= r
             elif action == 1: x -= r

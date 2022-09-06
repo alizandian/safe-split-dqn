@@ -6,7 +6,7 @@ import numpy as np
 import configparser
 
 class AgentIterativeSafetyGraph(object):
-    def __init__(self, input_dim, output_dim, nn_model, dimention, refined_experiences=True, gamma = 0.8, replay_buffer_size = 200, verbose = False):
+    def __init__(self, input_dim, output_dim, nn_model, dimention, refined_experiences=True, gamma = 0.7, replay_buffer_size = 200, verbose = False):
         config = configparser.ConfigParser()
         config.read('config.ini')
 
@@ -20,7 +20,7 @@ class AgentIterativeSafetyGraph(object):
         self.epsilon_interval = (self.epsilon_max - self.epsilon_min)
         self.frame_count = 0
         self.epsilon_random_frames = 0
-        self.epsilon_greedy_frames = 4000
+        self.epsilon_greedy_frames = 200
         self.update_counter = 0
         self.update_target_interval = 200
         self.previous_action_type = -1
@@ -34,13 +34,13 @@ class AgentIterativeSafetyGraph(object):
     def predict(self, s):
         return self.dqn.Q_target.predict(s)
 
-    def get_action(self, input, theta = 0.0):
+    def get_action(self, input):
         self.frame_count += 1
         self.epsilon -= self.epsilon_interval / self.epsilon_greedy_frames
         self.epsilon = max(self.epsilon, self.epsilon_min)
         
         # if self.frame_count < self.epsilon_random_frames or self.epsilon > np.random.rand(1)[0]:
-        if self.frame_count < self.epsilon_random_frames:
+        if False:
             if self.previous_action_type != 0: 
                 print("------------------------  RANDOM  -------------------------")
                 self.previous_action_type = 0
@@ -64,9 +64,9 @@ class AgentIterativeSafetyGraph(object):
                 return np.random.choice(possibles)
 
 
-    def refine_experiences(self, experiences: List[Tuple], only_last_items = 20):
+    def refine_experiences(self, experiences: List[Tuple], only_last_items = 10):
         t = experiences if len(experiences) < only_last_items else experiences[-only_last_items+1:]
-        return [[s,a, self.safety_graph.transition_safety((s,a,r,n,d)), n,d] for s,a,r,n,d in t]
+        return self.safety_graph.refine_experiences(t)
 
     def train(self):
         if self.refined_experiences: self.safety_graph.update()
@@ -74,13 +74,19 @@ class AgentIterativeSafetyGraph(object):
         hb = self.history_buffer.get_buffer()
         tb = self.experience_buffer.get_buffer()
         experiences = self.refine_experiences(list(tb)) if self.refined_experiences else tb
-        if len(hb) >= 100:
-            history_b = self.history_buffer.sample(100)
-            history = self.refine_experiences(history_b, 100) if self.refined_experiences else history_b
-            self.dqn.learn(history, len(history), self.refined_experiences)
-            self.update_counter += len(history)
 
-        self.dqn.learn(experiences, len(tb), self.refined_experiences)
+        unsafes = self.safety_graph.get_unsafe_bound_experiences()
+        if len(unsafes) >= 1:
+            self.dqn.learn(unsafes, len(unsafes))
+            self.update_counter += len(unsafes)
+
+            # l = int(len(unsafes)/2)
+            # history_b = self.history_buffer.sample(l)
+            # history = self.refine_experiences(history_b, l) if self.refined_experiences else history_b
+            # self.dqn.learn(history, len(history))
+            # self.update_counter += len(history)
+
+        self.dqn.learn(experiences, len(tb))
         self.update_counter += len(tb)
 
         if self.update_counter >= self.update_target_interval:
