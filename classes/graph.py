@@ -25,7 +25,7 @@ class Graph:
 
         if experiences != None:
             for t in experiences:
-                self.add_experience(t[0], t[1], t[2])
+                self.add_experience(t)
 
 
     def clamp(self, n, smallest, largest): return max(smallest, min(n, largest))
@@ -54,11 +54,10 @@ class Graph:
         min = np.min(values)
         max = np.max(values)
 
-        if min > -0.9:
-            print(mean)
+        if min > -0.8:
             return
 
-        PERCENT = 0.001
+        PERCENT = 0.004
 
         d = (mean - min) / (max - min)
         dmax = self.clamp(d + (d * PERCENT), 0, 1)
@@ -72,8 +71,9 @@ class Graph:
                 for a in range(self.actions_count):
                     v = values[reso-y-1][x][a]
                     if v >= new_min and v <= new_max:
-                        if self.cells[x][y][a] != -1:
+                        if self.cells[x][y][a] == 0:
                             self.cells[x][y][a] = -1
+                            print("override")
 
     def get_loc(self, state):
         x = self.clamp(int((state[0] - self.mins[0]) / self.len * self.dimention), 0, self.dimention-1)
@@ -137,17 +137,17 @@ class Graph:
         if origin not in self.targets: self.targets[origin] = set()
         self.targets[origin].add((target, action))
 
-        # if c > 30 and unsafe_count > 0 and safe_count > 0:
-        #     self.cells[l[0]][l[1]][action] = -1
-        #     if l not in self.graphs: 
-        #         mins = ((l[0] * self.teil) + self.mins[0], (l[1] * self.teil) + self.mins[1])
-        #         maxes = (((l[0] + 1) * self.teil) + self.mins[0], ((l[1] + 1) * self.teil) + self.mins[1])
-        #         self.graphs[l] = Graph(5, mins, maxes, self.experiences_from_full[l])
-        #     self.graphs[l].add_experience(state, next_state, violation)
-        # elif s == 0:
-        #     self.cells[l[0]][l[1]] = 0
-        # else:
-        #     self.cells[l[0]][l[1]] = 1
+        if origin in self.graphs:
+            self.graphs[origin].add_experience(experience)
+        else:
+            xps = self.experiences[origin[0]][origin[1]][action]
+            violating_xps = [x for x in xps if x[4] == 1]
+            c = len(xps)
+            v = len(violating_xps)
+            if c > self.dimention * 5 and v != c and v != 0:
+                mins = ((origin[0] * self.teil) + self.mins[0], (origin[1] * self.teil) + self.mins[1])
+                maxes = (((origin[0] + 1) * self.teil) + self.mins[0], ((origin[1] + 1) * self.teil) + self.mins[1])
+                self.graphs[origin] = Graph(max(self.dimention/2, 2), mins, maxes, xps)
 
         if self.cells[origin[0]][origin[1]][action] == -1:
             return
@@ -254,6 +254,10 @@ class Graph:
                 l = (i, j)
                 if l in assigned: continue
                 assigned.append(l)
+                if l in self.graphs:
+                    self.graphs[l].update()
+                    nodes.extend(self.graphs[l].nodes)
+                    continue
                 is_safe = self.is_safe(l)
                 node = Node(is_safe)
                 nodes.append(node)
@@ -274,6 +278,29 @@ class Graph:
                         neighburs = [n for n in neighburs if n not in assigned]
                         new_ns.extend(neighburs)
                     ns = new_ns
+
+        merged = False
+        while True:
+            if not merged: break
+            out = []
+            to_be_checked: List[Node] = []
+            to_be_checked.extend(nodes)
+
+            while len(to_be_checked) != 0:
+                n = to_be_checked.pop()
+                m = []
+                for nn in to_be_checked:
+                    if n.is_adjacent(nn):
+                        if n.value == nn.value:
+                            n = n.merge(nn)
+                            m.append(nn)
+                            merged = True
+
+                out.append(n)
+                to_be_checked = [t for t in to_be_checked if t not in m]
+            
+            nodes = out
+
 
         for n1 in nodes:
             for n2 in nodes:

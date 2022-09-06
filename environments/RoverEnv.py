@@ -106,7 +106,7 @@ class RoverEnv(gym.Env):
     def move(self, action, state):
         x, y = state
 
-        r = 20
+        r = 30
 
         # 0 bot, 1 left,  2 right, 3 top
         if y < -20:

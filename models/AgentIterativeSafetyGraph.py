@@ -19,15 +19,15 @@ class AgentIterativeSafetyGraph(object):
         self.epsilon_max = 1.0
         self.epsilon_interval = (self.epsilon_max - self.epsilon_min)
         self.frame_count = 0
-        self.epsilon_random_frames = 1000 
-        self.epsilon_greedy_frames = 2000
+        self.epsilon_random_frames = 0
+        self.epsilon_greedy_frames = 4000
         self.update_counter = 0
         self.update_target_interval = 200
         self.previous_action_type = -1
         self.history_buffer = ReplayBuffer(1000)
         self.experience_buffer = ReplayBuffer(replay_buffer_size)
         self.dqn = DQN(input_dim = input_dim, output_dim = output_dim, nn_model = nn_model, gamma = gamma, verbose = verbose)
-        self.safety_graph = Graph(output_dim, (dimention), (-1, -1), (1, 1))
+        self.safety_graph = Graph(output_dim, dimention, (-1, -1), (1, 1))
 
     def __clamp(self, n, smallest, largest): return max(smallest, min(n, largest))
 
