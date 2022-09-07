@@ -37,7 +37,7 @@ class DQN(object):
             self.Q_main.fit(input, target, verbose=0, batch_size = batch_size)
         self.update_q_target()
 
-    def get_snapshot(self, reso, violation_check_func=None):
+    def get_snapshot(self, reso):
         values = [[0]*reso for i in range(reso)]
         states = []
         for y in range(reso):
@@ -49,24 +49,12 @@ class DQN(object):
         results = self.Q_main.predict(np.stack(states))
         r = np.reshape(results, (-1, reso, 4))
 
-        min = np.min(r)
-        max = np.max(r)
-
-        min_threshold = min + ((max - min) * 0.5)
-
-        error = 0
         for y in range(reso):
             for x in range(reso):
                 v = r[y][x]
-                value = np.min(v)
                 values[reso-y-1][x] = v
-                if violation_check_func != None:
-                    violation = violation_check_func(states[y*reso+x])
-                    value_estimation = True if value < min_threshold else False
-                    if violation != value_estimation: error += 1
-        accuracy = (1 - (error / (reso * reso))) * 100
 
-        return values, accuracy
+        return values
 
 
     def learn(self, transitions, batch_size = 64):

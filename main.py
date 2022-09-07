@@ -1,4 +1,5 @@
 from environments.RoverEnv import RoverEnv
+from models.AgentSafeDQN import AgentSafeDQN
 from models.AgentSafeDQNSplit import AgentSafeDQNSplit
 from models.AgentIterativeSafetyGraph import AgentIterativeSafetyGraph
 from experiment.nn_config import *
@@ -16,7 +17,8 @@ plot_values: Dict[str, Dict[int, Tuple[list, float]]] = {} # values and accurace
 def experiment_base(predefined_actions = None):
     env = RoverEnv(seed=100)
     i_dim, o_dim, DQN_nn = SimplifiedCartPole_SafetyMonitor_NN(2,4)
-    agent = AgentIterativeSafetyGraph(i_dim, o_dim, DQN_nn, 15, refined_experiences=False)
+    _, _, MON_nn = SimplifiedCartPole_SafetyMonitor_NN(2,4)
+    agent = AgentSafeDQN(i_dim, o_dim, DQN_nn, MON_nn)
     actions, rewards = run_experiment("base", predefined_actions, agent, env)
     return actions
 
@@ -58,7 +60,8 @@ def run_experiment(experiment_name, predefined_actions, agent, env):
 
         if i % PLOT_INTERVAL == 0 and i != 0: 
             record(experiment_name, i, agent, env, next_state)
-            agent.safety_graph.visualize()
+            if hasattr(agent, "safety_graph"):
+                agent.safety_graph.visualize()
             plot(only_updates=True, only_accuracy=False)
 
         rewards.append(episode_reward) 
@@ -67,7 +70,8 @@ def run_experiment(experiment_name, predefined_actions, agent, env):
 
 def record(experiment, episode, agent, env, state):
     reso = 15
-    values, accuracy = agent.dqn.get_snapshot(reso, env.check_violation_solution)
+    values = agent.dqn.get_snapshot(reso)
+    accuracy = env.test_agent_accuracy(agent)
     if experiment not in plot_values: plot_values[experiment] = {}
 
     values_down = [[0]*reso for i in range(reso)]

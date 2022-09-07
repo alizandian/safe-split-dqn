@@ -96,7 +96,7 @@ class AgentIterativeSafetyGraph(object):
         hb.extend(tb)
         self.experience_buffer.clear()
 
-        if self.refined_experiences: self.safety_graph.feed_neural_network_feedback(self.dqn.get_snapshot(self.dimention)[0])
+        if self.refined_experiences: self.safety_graph.feed_neural_network_feedback(self.dqn.get_snapshot(self.dimention))
 
     def add_experience(self, e):
         self.experience_buffer.append(e)

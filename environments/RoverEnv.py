@@ -1,4 +1,5 @@
 from asyncio.sslproto import _create_transport_context
+from itertools import count
 import math
 import gym
 import random
@@ -23,10 +24,10 @@ class RoverEnv(gym.Env):
     Actions:
         Type: Discrete(4)
         Num   Action
-        0     Move BOTTOM a random amount between 15 and 25
-        1     Move LEFT a random amount between 15 and 25
-        2     Move RIGHT a random amount between 15 and 25
-        3     Move TOP a random amount between 15 and 25
+        0     Move DOWN 30 units
+        1     Move LEFT 30 units
+        2     Move RIGHT 30 units
+        3     Move UP 30 units
 
     Reward:
         Reward is 1 for every step taken.
@@ -53,24 +54,49 @@ class RoverEnv(gym.Env):
         # MIN X MIN Y MAX X MAX Y
         self.unsafe_areas = [
             (-70, -70, -45, -45), 
-            (50, 30, 100, 80), 
+            (50, 25, 100, 80), 
             (-100, 80, -80, 100)
-            ]
-        self.unsafe_areas_perfect = [
-            (-100, -100, -20, -20),
-            (25, 5, 100, 100),
-            (-100, 55, -55, 100),
-            (-100, -100, -75, 100), 
-            (-100, -100, 100, -75), 
-            (-100, 75, 100, 100), 
-            (75, -100, 100, 100)
             ]
         self.rendering_size = 600
         self.rendering_scale = self.rendering_size / (self.max - self.min)
         self.normalizer=[0.01, 0.01]
         self.denormalizer=[100, 100]
         self.previous_location = (-2,-2)
+        self.violating_actions_samples = [
+            ((-90, -30), 0),
+            ((-60, -30), 0),
+            ((-30, -30), 0),
+            ((0, -30), 0),
+            ((30, -30), 0),
+            ((60, -30), 0),
+            ((90, -30), 0),
+            ((90, -30), 2),
+            ((90, 0), 2),
+            ((30, 30), 2),
+            ((30, 60), 2),
+            ((90, 90), 0),
+            ((90, 90), 2),
+            ((90, 90), 3),
+            ((60, 90), 3),
+            ((30, 90), 3),
+            ((0, 90), 3),
+            ((-30, 90), 3),
+            ((-60, 90), 3),
+            ((-90, 60), 1),
+            ((-90, 30), 1),
+            ((-90, 0), 1),
+            ((-90, -30), 1),
+        ]
 
+
+    def test_agent_accuracy(self, agent):
+        error = 0
+
+        for state, action in self.violating_actions_samples:
+            a = agent.get_action(self.normalize(state))
+            if a == action: error += 1
+
+        return (1.0 - error/len(self.violating_actions_samples)) * 100
 
     def normalize(self, state):
         return (state[0] * self.normalizer[0], state[1] * self.normalizer[1])
@@ -90,18 +116,7 @@ class RoverEnv(gym.Env):
 
         if x < self.min or x > self.max or y < self.min or y > self.max:
             return True
-        return False
-        
-    def check_violation_solution(self, state):
-        x, y = self.denormalize(state)
-        for minx, miny, maxx, maxy in self.unsafe_areas_perfect:
-            if x >= minx and x <= maxx and y >= miny and y <= maxy:
-                return True
-
-        if x < self.min or x > self.max or y < self.min or y > self.max:
-            return True
-        return False
-            
+        return False 
 
     def move(self, action, state):
         x, y = state
