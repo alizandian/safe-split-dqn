@@ -73,8 +73,23 @@ class FixedCartPoleEnv(gym.Env):
         self.viewer = None
         self.state = None
 
+        self.action_names = ['left', 'right']
+
         self.steps_beyond_done = None
         self.step_count = 0
+        self.normalizer=[2.5, 0.5]
+        self.denormalizer=[0.40, 2.0]
+
+    def test_agent_accuracy(self, agent):
+        error = 0
+
+        return (1.0 - error/10) * 100
+
+    def normalize(self, state):
+        return (state[0] * self.normalizer[0], state[1] * self.normalizer[1])
+
+    def denormalize(self, state):
+        return (state[0] * self.denormalizer[0], state[1] * self.denormalizer[1])
 
     def seed(self, seed=None):
         self.np_random, seed = seeding.np_random(seed)
@@ -131,14 +146,14 @@ class FixedCartPoleEnv(gym.Env):
             self.steps_beyond_done += 1
             reward = 0.0
 
-        return np.array(self.state, dtype=np.float32), reward, done, {}
+        return np.array(self.normalize(self.state), dtype=np.float32), reward, done, {}
 
     def reset(self):
         self.state = self.np_random.uniform(low=-0.15, high=0.15, size=(2,))
         #self.state = [-0.20, -0.05]
         self.steps_beyond_done = None
         self.step_count = 0
-        return np.array(self.state, dtype=np.float32)
+        return np.array(self.normalize(self.state), dtype=np.float32)
 
     def render(self, mode="human"):
         screen_width = 600

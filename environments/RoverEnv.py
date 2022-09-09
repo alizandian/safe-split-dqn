@@ -51,17 +51,19 @@ class RoverEnv(gym.Env):
         self.state = None
         self.steps_beyond_done = None
         self.step_count = 0
+        self.rendering_size = 600
+        self.rendering_scale = self.rendering_size / (self.max - self.min)
+        self.normalizer=[0.01, 0.01]
+        self.denormalizer=[100, 100]
+        self.previous_location = (-2,-2)
+        self.action_names = ['down', 'left', 'right', 'up']
         # MIN X MIN Y MAX X MAX Y
         self.unsafe_areas = [
             (-70, -70, -45, -45), 
             (50, 25, 100, 80), 
             (-100, 80, -80, 100)
             ]
-        self.rendering_size = 600
-        self.rendering_scale = self.rendering_size / (self.max - self.min)
-        self.normalizer=[0.01, 0.01]
-        self.denormalizer=[100, 100]
-        self.previous_location = (-2,-2)
+        # state, forbidden action
         self.violating_actions_samples = [
             ((-90, -30), 0),
             ((-60, -30), 0),

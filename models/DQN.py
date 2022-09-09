@@ -47,7 +47,7 @@ class DQN(object):
                 states.append(((x * d) + dd - 1, (y * d) + dd - 1))
 
         results = self.Q_main.predict(np.stack(states))
-        r = np.reshape(results, (-1, reso, 4))
+        r = np.reshape(results, (-1, reso, self.output_dim))
 
         for y in range(reso):
             for x in range(reso):
