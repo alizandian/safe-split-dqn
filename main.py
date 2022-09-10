@@ -11,7 +11,7 @@ import time
 
 MAX_EPISODE = 401
 VISUALISATION = True
-PLOT_INTERVAL = 20
+PLOT_INTERVAL = 10
 ARTIFICIAL_DELAY = -0.1
 plot_values: Dict[str, Dict[int, Tuple[list, float]]] = {} # values, env and accuracy (tuple) of each episode (second dict) of each experiment (first dict).
 
@@ -26,14 +26,14 @@ def experiment_base(predefined_actions = None):
 def experiment_refined_experiences(predefined_actions = None):
     env = RoverEnv(seed=100)
     i_dim, o_dim, DQN_nn = SimplifiedCartPole_SafetyMonitor_NN(2,4)
-    agent = AgentIterativeSafetyGraph(i_dim, o_dim, DQN_nn, 15)
+    agent = AgentIterativeSafetyGraph(i_dim, o_dim, DQN_nn, 10)
     actions, rewards = run_experiment("refined", predefined_actions, agent, env)
     return actions
 
 def experiment_refined_experiences_fixed_cartPole(predefined_actions = None):
     env = FixedCartPoleEnv(seed=100)
     i_dim, o_dim, DQN_nn = SimplifiedCartPole_SafetyMonitor_NN(2,2)
-    agent = AgentIterativeSafetyGraph(i_dim, o_dim, DQN_nn, 10)
+    agent = AgentIterativeSafetyGraph(i_dim, o_dim, DQN_nn, 15)
     actions, rewards = run_experiment("refined", predefined_actions, agent, env)
     return actions
 
@@ -78,20 +78,23 @@ def run_experiment(experiment_name, predefined_actions, agent, env):
 
 def record(experiment, episode, agent, env, state):
     reso = 15
-    c = agent.input_dim
+    c = agent.output_dim
     values = agent.dqn.get_snapshot(reso)
     accuracy = env.test_agent_accuracy(agent)
     if experiment not in plot_values: plot_values[experiment] = {}
 
     rvs = []
-    for i in range(c):
-        rvs.append([[0]*reso for i in range(reso)])
+    for _ in range(c):
+        rvs.append([[0]*reso for _ in range(reso)])
 
     for y in range(reso):
         for x in range(reso):
             for i in range(c):
                 rvs[i][reso-y-1][x] = values[reso-y-1][x][i]
-                rvs[i] = np.interp(rvs[i], [np.min(rvs[i]), np.max(rvs[i])], [-1, +1])
+
+    for i in range(c):
+        rvs[i] = np.interp(rvs[i], [np.min(rvs[i]), np.max(rvs[i])], [-1, +1])
+                
 
     plot_values[experiment][episode] = (rvs, env, accuracy)
 
@@ -114,12 +117,10 @@ def plot_output_4(experiment_name, values, accuracy, only_accuracy, env, cmap='h
     print(f"accuracy: {accuracy}")
     _, ax = plt.subplots(len(env.action_names))
 
-
     for i, name in enumerate(env.action_names):
         ax[i].imshow(values[i], cmap='hot')
         ax[i].set_title(name)
 
-    plt.title(experiment_name)
     plt.show() 
 
 def plot(only_updates=False, only_accuracy=False): 
@@ -143,6 +144,6 @@ def plot(only_updates=False, only_accuracy=False):
         plt.show()
 
 if __name__ == "__main__":
-    actions = experiment_refined_experiences_fixed_cartPole()
+    actions = experiment_refined_experiences()
     actions = experiment_base(predefined_actions=actions)
     plot()

@@ -37,6 +37,7 @@ class Graph:
         return safe_actions
 
     def feed_neural_network_feedback(self, values):
+        return
         unsafe_q_values = []
         for y in range(self.dimention):
             for x in range(self.dimention):
@@ -52,10 +53,10 @@ class Graph:
         max = np.max(values)
 
         print(min)
-        if min > -0.6:
+        if min > -0.8:
             return
 
-        PERCENT = 0.008
+        PERCENT = 0.005
 
         d = (mean - min) / (max - min)
         dmax = self.clamp(d + (d * PERCENT), 0, 1)
