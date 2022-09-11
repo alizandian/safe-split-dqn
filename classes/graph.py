@@ -37,7 +37,6 @@ class Graph:
         return safe_actions
 
     def feed_neural_network_feedback(self, values):
-        return
         unsafe_q_values = []
         for y in range(self.dimention):
             for x in range(self.dimention):
@@ -52,7 +51,6 @@ class Graph:
         min = np.min(values)
         max = np.max(values)
 
-        print(min)
         if min > -0.8:
             return
 
@@ -161,7 +159,10 @@ class Graph:
         #         self.graphs[origin] = Graph(self.actions_count, max(self.dimention/2, 2), mins, maxes, xps)
 
         if self.cells[origin[0]][origin[1]][action] == -1:
-            return
+            if len(self.experiences[origin[0]][origin[1]][action]) == 1:
+                if violation == 0:
+                    self.cells[origin[0]][origin[1]][action] = 1
+                    self.update_location(origin)
         elif violation == 1:
             self.cells[origin[0]][origin[1]][action] = -1
             self.update_location(origin)
@@ -217,9 +218,9 @@ class Graph:
             elif self.get_action_value(s, a) == -1:
                 done = 1
                 reward = -1
-            elif self.is_state_safe(n) != 1:
-                done = 0
-                reward = -0.5
+            elif self.is_state_safe(n) == -1:
+                done = 1
+                reward = -1
             else:
                 reward = 1
             

@@ -126,25 +126,12 @@ class FixedCartPoleEnv(gym.Env):
         done = bool(
             theta < -self.theta_threshold_radians
             or theta > self.theta_threshold_radians
-            or self.step_count >= self.step_threshold
         )
 
         if not done:
             reward = 1.0
-        elif self.steps_beyond_done is None:
-            # Pole just fell!
-            self.steps_beyond_done = 0
+        else: 
             reward = -1.0
-        else:
-            if self.steps_beyond_done == 0:
-                logger.warn(
-                    "You are calling 'step()' even though this "
-                    "environment has already returned done = True. You "
-                    "should always call 'reset()' once you receive 'done = "
-                    "True' -- any further steps are undefined behavior."
-                )
-            self.steps_beyond_done += 1
-            reward = 0.0
 
         return np.array(self.normalize(self.state), dtype=np.float32), reward, done, {}
 

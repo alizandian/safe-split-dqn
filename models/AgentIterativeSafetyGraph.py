@@ -19,8 +19,8 @@ class AgentIterativeSafetyGraph(object):
         self.epsilon_max = 1.0
         self.epsilon_interval = (self.epsilon_max - self.epsilon_min)
         self.frame_count = 0
-        self.epsilon_random_frames = 0
-        self.epsilon_greedy_frames = 200
+        self.epsilon_random_frames = 2000
+        self.epsilon_greedy_frames = 2000
         self.update_counter = 0
         self.update_target_interval = 200
         self.previous_action_type = -1
@@ -39,7 +39,7 @@ class AgentIterativeSafetyGraph(object):
         self.epsilon -= self.epsilon_interval / self.epsilon_greedy_frames
         self.epsilon = max(self.epsilon, self.epsilon_min)
         
-        # if self.frame_count < self.epsilon_random_frames or self.epsilon > np.random.rand(1)[0]:
+        #if self.frame_count < self.epsilon_random_frames or self.epsilon > np.random.rand(1)[0]:
         if False:
             if self.previous_action_type != 0: 
                 print("------------------------  RANDOM  -------------------------")

@@ -11,7 +11,7 @@ import time
 
 MAX_EPISODE = 401
 VISUALISATION = True
-PLOT_INTERVAL = 10
+PLOT_INTERVAL = 20
 ARTIFICIAL_DELAY = -0.1
 plot_values: Dict[str, Dict[int, Tuple[list, float]]] = {} # values, env and accuracy (tuple) of each episode (second dict) of each experiment (first dict).
 
@@ -33,7 +33,7 @@ def experiment_refined_experiences(predefined_actions = None):
 def experiment_refined_experiences_fixed_cartPole(predefined_actions = None):
     env = FixedCartPoleEnv(seed=100)
     i_dim, o_dim, DQN_nn = SimplifiedCartPole_SafetyMonitor_NN(2,2)
-    agent = AgentIterativeSafetyGraph(i_dim, o_dim, DQN_nn, 15)
+    agent = AgentIterativeSafetyGraph(i_dim, o_dim, DQN_nn, 30)
     actions, rewards = run_experiment("refined", predefined_actions, agent, env)
     return actions
 
@@ -144,6 +144,6 @@ def plot(only_updates=False, only_accuracy=False):
         plt.show()
 
 if __name__ == "__main__":
-    actions = experiment_refined_experiences()
+    actions = experiment_refined_experiences_fixed_cartPole()
     actions = experiment_base(predefined_actions=actions)
     plot()
