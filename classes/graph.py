@@ -54,7 +54,7 @@ class Graph:
         if min > -0.8:
             return
 
-        PERCENT = 0.005
+        PERCENT = 0.01
 
         d = (mean - min) / (max - min)
         dmax = self.clamp(d + (d * PERCENT), 0, 1)

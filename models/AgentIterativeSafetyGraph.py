@@ -80,11 +80,12 @@ class AgentIterativeSafetyGraph(object):
             self.dqn.learn(unsafes, len(unsafes))
             self.update_counter += len(unsafes)
 
-            # l = int(len(unsafes)/2)
-            # history_b = self.history_buffer.sample(l)
-            # history = self.refine_experiences(history_b, l) if self.refined_experiences else history_b
-            # self.dqn.learn(history, len(history))
-            # self.update_counter += len(history)
+        l = max(len(unsafes), 50)
+        if len(self.history_buffer) >= l:
+            history_b = self.history_buffer.sample(l)
+            history = self.refine_experiences(history_b, l) if self.refined_experiences else history_b
+            self.dqn.learn(history, len(history))
+            self.update_counter += len(history)
 
         self.dqn.learn(experiences, len(tb))
         self.update_counter += len(tb)
