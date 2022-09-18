@@ -15,6 +15,7 @@ class RoverEnv(gym.Env):
     def __init__(self, seed = None):
         self.max = 100
         self.min = -100
+        self.env = gym.make('BreakoutDeterministic-v4', render_mode='human') 
         self.action_space = spaces.Discrete(4)
         self.observation_space = spaces.Box(self.min, self.max, (2,), dtype=np.float32)
         self.seed(seed)
@@ -46,31 +47,7 @@ class RoverEnv(gym.Env):
         return [seed]
 
     def __check_violation(self, state):
-        x, y = state
-        for minx, miny, maxx, maxy in self.unsafe_areas:
-            if x >= minx and x <= maxx and y >= miny and y <= maxy:
-                return True
-
-        if x < self.min or x > self.max or y < self.min or y > self.max:
-            return True
-        return False 
-
-    def move(self, action, state):
-        x, y = state
-
-        r = 30
-
-        # 0 bot, 1 left,  2 right, 3 top
-        if y < -50:
-            y -= r
-
-        else:
-            if action == 0: y -= r
-            elif action == 1: x -= r
-            elif action == 2: x += r
-            else: y += r
-
-        return (x,y)
+        return False
 
     def step(self, action):
         err_msg = "%r (%s) invalid" % (action, type(action))
@@ -103,10 +80,6 @@ class RoverEnv(gym.Env):
         self.steps_beyond_done = None
         self.step_count = 0
         return np.array(self.normalize(self.state), dtype=np.float32)
-
-    def loc_to_screen(self, state):
-        x, y = state
-        return ((x + 100) * self.rendering_scale, (y + 100) * self.rendering_scale)
 
     def render(self, mode="human"):
         if self.viewer is None:
@@ -149,5 +122,10 @@ class RoverEnv(gym.Env):
             self.viewer = None
 
 if __name__ == "__main__":
-    print(envs.registry.all())
-    env = gym.make('SpaceInvaders-v0') 
+    
+    env = gym.make('BreakoutDeterministic-v4', render_mode='human') 
+    env.reset()
+    for _ in range(1000):
+        e = env.step(env.action_space.sample())
+        env.render()
+    env.close()
