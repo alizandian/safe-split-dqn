@@ -55,23 +55,15 @@ def draw_graph(nodes: List[Node]):
     plt.axis('off')
     plt.show()
 
-def draw_graph_grid(nodes: List[Node], grid_dimention):
+def draw_graph_grid(nodes: List[Node]):
     root = tkinter.Tk()
-    min_x, min_y = 0, 0
-    max_x, max_y = 500, 500
-    node_size = 20
-    canvas = tkinter.Canvas(root, bg="white", height=max_x, width=max_y)
+    w, h = 500
+    canvas = tkinter.Canvas(root, bg="white", height=h, width=w)
 
-    lx = max_x - min_x
-    ly = max_y - min_y
-    gx, gy = grid_dimention
-    xu = lx / gx
-    yu = ly / gy
-
-
-    for index, node in enumerate(nodes):
+    for node in nodes:
         for r in node.regions:
-            canvas.create_rectangle(r.x_min*xu, max_y- r.y_min*yu, r.x_max*xu, max_y - r.y_max*yu, fill=colors[node.value])
+            x0, x1, y0, y1 = r.windowed_values(w, h)
+            canvas.create_rectangle((x0, y0, x1, y1), fill=colors[node.value])
 
     canvas.pack()
     root.mainloop()

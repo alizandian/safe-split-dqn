@@ -7,8 +7,10 @@ import numpy as np
 class Graph:
     cells: List[List[int]] = None
 
-    def __init__(self, actions_count, dimention, mins, maxes, experiences = None) -> None:
+    def __init__(self, actions_count, dimention, mins, maxes, parent_dimention, location = None, experiences = None) -> None:
         self.dimention = dimention
+        self.parent_dimention = parent_dimention
+        self.location = location
         self.mins = mins
         self.maxes = maxes
         self.len = maxes[0] - mins[0]
@@ -20,7 +22,7 @@ class Graph:
         self.targets = {}
         self.experiences = [[[[] for _ in range(actions_count)] for _ in range(dimention)] for _ in range(dimention)]
         self.cells = [[[0 for _ in range(actions_count)] for _ in range(dimention)] for _ in range(dimention)]
-        #self.graphs: Dict[Tuple, Graph] = {} 
+        self.graphs: Dict[Tuple, Graph] = {} 
 
         if experiences != None:
             for t in experiences:
@@ -146,17 +148,17 @@ class Graph:
         if origin not in self.targets: self.targets[origin] = set()
         self.targets[origin].add((target, action))
 
-        # if origin in self.graphs:
-        #     self.graphs[origin].add_experience(experience)
-        # else:
-        #     xps = self.experiences[origin[0]][origin[1]][action]
-        #     violating_xps = [x for x in xps if x[4] == 1]
-        #     c = len(xps)
-        #     v = len(violating_xps)
-        #     if c > self.dimention * 5 and v != c and v != 0:
-        #         mins = ((origin[0] * self.teil) + self.mins[0], (origin[1] * self.teil) + self.mins[1])
-        #         maxes = (((origin[0] + 1) * self.teil) + self.mins[0], ((origin[1] + 1) * self.teil) + self.mins[1])
-        #         self.graphs[origin] = Graph(self.actions_count, max(self.dimention/2, 2), mins, maxes, xps)
+        if origin in self.graphs:
+            self.graphs[origin].add_experience(experience)
+        else:
+            xps = self.experiences[origin[0]][origin[1]][action]
+            violating_xps = [x for x in xps if x[4] == 1]
+            c = len(xps)
+            v = len(violating_xps)
+            if c > self.dimention * 5 and v != c and v != 0:
+                mins = ((origin[0] * self.teil) + self.mins[0], (origin[1] * self.teil) + self.mins[1])
+                maxes = (((origin[0] + 1) * self.teil) + self.mins[0], ((origin[1] + 1) * self.teil) + self.mins[1])
+                self.graphs[origin] = Graph(self.actions_count, max(self.dimention/2, 2), mins, maxes, self.dimention, origin, xps)
 
         if self.cells[origin[0]][origin[1]][action] == -1:
             if len(self.experiences[origin[0]][origin[1]][action]) == 1:
@@ -193,19 +195,17 @@ class Graph:
 
     def get_action_value(self, state, action):
         l = self.get_loc(state)
-        # if l in self.graphs:
-        #     return self.graphs[l].get_action_value(state, action)
-        # else:
-        #     return self.cells[l[0]][l[1]][action]
-        return self.cells[l[0]][l[1]][action]
+        if l in self.graphs:
+            return self.graphs[l].get_action_value(state, action)
+        else:
+            return self.cells[l[0]][l[1]][action]
 
     def is_state_safe(self, state):
         l = self.get_loc(state)
-        # if l in self.graphs:
-        #     return self.graphs[l].is_state_safe(state)
-        # else:
-        #     return self.is_safe(l)
-        return self.is_safe(l)
+        if l in self.graphs:
+            return self.graphs[l].is_state_safe(state)
+        else:
+            return self.is_safe(l)
 
     def refine_experiences(self, experiences):
         refined_experiences = []
@@ -272,14 +272,14 @@ class Graph:
                 l = (i, j)
                 if l in assigned: continue
                 assigned.append(l)
-                # if l in self.graphs:
-                #     self.graphs[l].update()
-                #     nodes.extend(self.graphs[l].nodes)
-                #     continue
+                if l in self.graphs:
+                    self.graphs[l].update()
+                    nodes.extend(self.graphs[l].nodes)
+                    continue
                 is_safe = self.is_safe(l)
                 node = Node(is_safe)
                 nodes.append(node)
-                node.add_region(Region(i, i+1, j, j+1))
+                node.add_region(Region(i, i+1, j, j+1, self.dimention, self.location, self.parent_dimention))
 
                 ns = self.get_neighburs(l)
                 while len(ns) != 0:
@@ -288,8 +288,8 @@ class Graph:
 
                     new_ns = []
                     for (x, y) in ns:
-                        if (x,y) not in assigned:
-                            node.add_region(Region(x, x+1, y, y+1))
+                        if (x,y) not in assigned and (x,y) not in self.graphs:
+                            node.add_region(Region(x, x+1, y, y+1, self.dimention, self.location, self.parent_dimention))
                             assigned.append((x,y))
 
                         neighburs = self.get_neighburs((x, y))
@@ -297,27 +297,27 @@ class Graph:
                         new_ns.extend(neighburs)
                     ns = new_ns
 
-        # merged = False
-        # while True:
-        #     if not merged: break
-        #     out = []
-        #     to_be_checked: List[Node] = []
-        #     to_be_checked.extend(nodes)
+        merged = False
+        while True:
+            if not merged: break
+            out = []
+            to_be_checked: List[Node] = []
+            to_be_checked.extend(nodes)
 
-        #     while len(to_be_checked) != 0:
-        #         n = to_be_checked.pop()
-        #         m = []
-        #         for nn in to_be_checked:
-        #             if n.is_adjacent(nn):
-        #                 if n.value == nn.value:
-        #                     n = n.merge(nn)
-        #                     m.append(nn)
-        #                     merged = True
+            while len(to_be_checked) != 0:
+                n = to_be_checked.pop()
+                m = []
+                for nn in to_be_checked:
+                    if n.is_adjacent(nn):
+                        if n.value == nn.value:
+                            n = n.merge(nn)
+                            m.append(nn)
+                            merged = True
 
-        #         out.append(n)
-        #         to_be_checked = [t for t in to_be_checked if t not in m]
+                out.append(n)
+                to_be_checked = [t for t in to_be_checked if t not in m]
             
-        #     nodes = out
+            nodes = out
 
         for n1 in nodes:
             for n2 in nodes:
