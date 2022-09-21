@@ -33,7 +33,7 @@ def experiment_refined_experiences(predefined_actions = None):
 def experiment_refined_experiences_fixed_cartPole(predefined_actions = None):
     env = FixedCartPoleEnv(seed=100)
     i_dim, o_dim, DQN_nn = SimplifiedCartPole_SafetyMonitor_NN(2,2)
-    agent = AgentIterativeSafetyGraph(i_dim, o_dim, DQN_nn, (6, 6))
+    agent = AgentIterativeSafetyGraph(i_dim, o_dim, DQN_nn, (15, 15))
     actions, rewards = run_experiment("refined", predefined_actions, agent, env)
     return actions
 

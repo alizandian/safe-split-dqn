@@ -30,13 +30,16 @@ class Region:
         return False
 
     def windowed_values(self, width, height):
-        dx = width / self.dimention[0]
-        dy = height / self.dimention[1]
-        offset = (0,0)
         if self.location != None:
+            dx = width / self.parent_dimention[0]
+            dy = height / self.parent_dimention[1]
             offset = (self.location[0] * dx, self.location[1] * dy)
-            dx = dx / self.parent_dimention[0]
-            dy = dy / self.parent_dimention[1]
+            dx = dx / self.dimention[0]
+            dy = dy / self.dimention[1]
+        else:
+            offset = (0, 0)
+            dx = width / self.dimention[0]
+            dy = height / self.dimention[1]
 
         x_min = offset[0] + self.x_min * dx
         x_max = offset[0] + self.x_max * dx

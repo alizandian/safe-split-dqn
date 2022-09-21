@@ -100,8 +100,9 @@ class AgentIterativeSafetyGraph(object):
         if self.refined_experiences: self.safety_graph.feed_neural_network_feedback(self.dqn.get_snapshot(self.dimention))
 
     def add_experience(self, e):
-        self.experience_buffer.append(e)
-        self.safety_graph.add_experience(e)
+        refined_experience = self.safety_graph.refine_experiences([e])[0]
+        self.experience_buffer.append(refined_experience)
+        self.safety_graph.add_experience(refined_experience)
 
     def random_action(self):
         return np.random.randint(self.output_dim)

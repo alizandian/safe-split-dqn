@@ -9,8 +9,8 @@ class Graph:
 
     def __init__(self, actions_count, dimention, mins, maxes, parent: Graph = None, location = None, experiences = None) -> None:
         self.parent = parent if parent != None else self
+        self.parent_dimention = parent.dimention if parent != None else None
         self.dimention = dimention
-        self.parent_dimention = parent.dimention
         self.location = location
         self.mins = mins
         self.maxes = maxes
@@ -35,6 +35,8 @@ class Graph:
         location = self.get_loc(state)
         if location in self.graphs:
             return self.graphs[location].get_safe_actions(state)
+        elif location == None:
+            raise NotImplementedError
         else:
             safe_actions = []
             for a, value in enumerate(self.cells[location[0]][location[1]]):
@@ -43,6 +45,7 @@ class Graph:
             return safe_actions
 
     def feed_neural_network_feedback(self, values):
+        return
         unsafe_q_values = []
         for y in range(self.dimention[1]):
             for x in range(self.dimention[0]):
@@ -114,8 +117,7 @@ class Graph:
     def evaluate_state(self, state, action):
         l = self.get_loc(state)
         if l in self.graphs:
-            l = self.graphs[l].get_loc(state)
-            self.graphs[l].evaluate_location(l, action)
+            self.graphs[l].evaluate_location(self.graphs[l].get_loc(state), action)
         else:
             self.evaluate_location(l, action)
 
@@ -123,12 +125,13 @@ class Graph:
         safe_counts = 0
         unsafe_counts = 0
         unsure_counts = 0
-        for _, a, _, next_state, _ in self.targets[location]:
-            if action == a:
-                s = self.parent.is_state_safe(next_state)
-                if s == -1: unsafe_counts += 1
-                elif s == 1: safe_counts += 1
-                else: unsure_counts += 1
+        if location in self.targets:
+            for _, a, _, next_state, _ in self.targets[location]:
+                if action == a:
+                    s = self.parent.is_state_safe(next_state)
+                    if s == -1: unsafe_counts += 1
+                    elif s == 1: safe_counts += 1
+                    else: unsure_counts += 1
 
         pv = self.is_safe(location)
         if self.cells[location[0]][location[1]][action] != -1:
@@ -143,6 +146,9 @@ class Graph:
         exs = []
         for y in range(self.dimention[1]):
             for x in range(self.dimention[0]): 
+                if (x,y) in self.graphs:
+                    exs.extend(self.graphs[(x,y)].get_unsafe_bound_experiences())
+                    continue
                 if self.is_safe((x, y)) == 1:
                     for a in range(self.actions_count):
                         if self.cells[x][y][a] == -1:
@@ -152,23 +158,22 @@ class Graph:
         return exs
 
     def add_experience(self, experience):
-        xp = self.refine_experiences([experience])[0]
-        state, action, _, next_state, violation = xp
+        state, action, _, next_state, violation = experience
         origin = self.get_loc(state)
         target = self.get_loc(next_state)
 
         if target != None:
             if target not in self.origins: self.origins[target] = []
-            self.origins[target].append(xp)
-            if target in self.graphs: self.graphs[target].add_experience(xp)
+            self.origins[target].append(experience)
+            if target in self.graphs: self.graphs[target].add_experience(experience)
 
         if origin != None: 
-            self.experiences[origin[0]][origin[1]][action].append(xp)
+            self.experiences[origin[0]][origin[1]][action].append(experience)
             self.experience_count += 1
             if origin not in self.targets: self.targets[origin] = []
-            self.targets[origin].append(xp)
+            self.targets[origin].append(experience)
             if origin in self.graphs: 
-                self.graphs[origin].add_experience(xp)
+                self.graphs[origin].add_experience(experience)
             else:   
                 xps = self.experiences[origin[0]][origin[1]][action]
                 violating_xps = [x for x in xps if x[4] == 1]
@@ -177,7 +182,7 @@ class Graph:
                 if c > 2 and v != c and v != 0 and self.parent_dimention == None:
                     mins = ((origin[0] * self.teil[0]) + self.mins[0], (origin[1] * self.teil[1]) + self.mins[1])
                     maxes = (((origin[0] + 1) * self.teil[0]) + self.mins[0], ((origin[1] + 1) * self.teil[1]) + self.mins[1])
-                    self.graphs[origin] = Graph(self.actions_count, (6,6), mins, maxes, self, origin, self.origins[origin] + self.targets[origin])
+                    self.graphs[origin] = Graph(self.actions_count, (4,4), mins, maxes, self, origin, self.origins[origin] + self.targets[origin])
 
                 pv = self.is_safe(origin)
                 if self.cells[origin[0]][origin[1]][action] == -1:
@@ -280,10 +285,6 @@ class Graph:
         return ns
 
     def update(self):
-        """
-        Updating node representation of the model.
-        A lot of optimisation potential here. Perhaps increamental updates?
-        """
         Node.index = 0
         nodes: List[Node] = []
         assigned = []
@@ -295,6 +296,7 @@ class Graph:
                 if l in self.graphs:
                     self.graphs[l].update()
                     nodes.extend(self.graphs[l].nodes)
+                    assigned.append(l)
                     continue
                 is_safe = self.is_safe(l)
                 node = Node(is_safe)
@@ -304,11 +306,11 @@ class Graph:
                 ns = self.get_neighburs(l)
                 while len(ns) != 0:
                     ns = list(dict.fromkeys(ns))
-                    ns = [(x,y) for x,y in ns if is_safe == self.is_safe((x,y))]
+                    ns = [(x,y) for x,y in ns if (x,y) not in self.graphs and is_safe == self.is_safe((x,y))]
 
                     new_ns = []
                     for (x, y) in ns:
-                        if (x,y) not in assigned and (x,y) not in self.graphs:
+                        if (x,y) not in assigned:
                             node.add_region(Region(x, x+1, y, y+1, self.dimention, self.location, self.parent_dimention))
                             assigned.append((x,y))
 
