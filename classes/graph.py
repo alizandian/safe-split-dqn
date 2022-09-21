@@ -79,6 +79,10 @@ class Graph:
                             print("override")
 
     def get_loc(self, state):
+        if self.location != None:
+            if state[0] < self.mins[0] or state[0] > self.maxes[0] or state[1] < self.mins[1] or state[1] > self.maxes[1]:
+                None
+
         x = self.clamp(int((state[0] - self.mins[0]) / self.len[0] * self.dimention[0]), 0, self.dimention[0]-1)
         y = self.clamp(int((state[1] - self.mins[1]) / self.len[1] * self.dimention[1]), 0, self.dimention[1]-1)
 
@@ -104,7 +108,7 @@ class Graph:
 
     def update_location(self, location):
         if location in self.origins:
-            for state, action in self.origins[location]:
+            for state, action, _, _, _ in self.origins[location]:
                 self.parent.evaluate_state(state, action)
 
     def evaluate_state(self, state, action):
@@ -115,15 +119,13 @@ class Graph:
         else:
             self.evaluate_location(l, action)
 
-    def evaluate_location(self, state, action):
-        l = self.get_loc(state)
-        if l in self.graphs
+    def evaluate_location(self, location, action):
         safe_counts = 0
         unsafe_counts = 0
         unsure_counts = 0
-        for target, a in self.targets[location]:
+        for _, a, _, next_state, _ in self.targets[location]:
             if action == a:
-                s = self.is_safe(target)
+                s = self.parent.is_state_safe(next_state)
                 if s == -1: unsafe_counts += 1
                 elif s == 1: safe_counts += 1
                 else: unsure_counts += 1
@@ -150,40 +152,44 @@ class Graph:
         return exs
 
     def add_experience(self, experience):
-        state, action, _, next_state, violation = self.refine_experiences([experience])[0]
+        xp = self.refine_experiences([experience])[0]
+        state, action, _, next_state, violation = xp
         origin = self.get_loc(state)
         target = self.get_loc(next_state)
-        self.experiences[origin[0]][origin[1]][action].append(experience)
-        self.experience_count += 1
 
-        if target not in self.origins: self.origins[target] = set()
-        self.origins[target].add((state, action))
-        if origin not in self.targets: self.targets[origin] = set()
-        self.targets[origin].add((next_state, action))
+        if target != None:
+            if target not in self.origins: self.origins[target] = []
+            self.origins[target].append(xp)
+            if target in self.graphs: self.graphs[target].add_experience(xp)
 
-        if origin in self.graphs:
-            self.graphs[origin].add_experience(experience)
-        else:
-            xps = self.experiences[origin[0]][origin[1]][action]
-            violating_xps = [x for x in xps if x[4] == 1]
-            c = len(xps)
-            v = len(violating_xps)
-            if c > 2 and v != c and v != 0 and self.parent_dimention == None:
-                mins = ((origin[0] * self.teil[0]) + self.mins[0], (origin[1] * self.teil[1]) + self.mins[1])
-                maxes = (((origin[0] + 1) * self.teil[0]) + self.mins[0], ((origin[1] + 1) * self.teil[1]) + self.mins[1])
-                self.graphs[origin] = Graph(self.actions_count, (6,6), mins, maxes, self, origin, xps)
+        if origin != None: 
+            self.experiences[origin[0]][origin[1]][action].append(xp)
+            self.experience_count += 1
+            if origin not in self.targets: self.targets[origin] = []
+            self.targets[origin].append(xp)
+            if origin in self.graphs: 
+                self.graphs[origin].add_experience(xp)
+            else:   
+                xps = self.experiences[origin[0]][origin[1]][action]
+                violating_xps = [x for x in xps if x[4] == 1]
+                c = len(xps)
+                v = len(violating_xps)
+                if c > 2 and v != c and v != 0 and self.parent_dimention == None:
+                    mins = ((origin[0] * self.teil[0]) + self.mins[0], (origin[1] * self.teil[1]) + self.mins[1])
+                    maxes = (((origin[0] + 1) * self.teil[0]) + self.mins[0], ((origin[1] + 1) * self.teil[1]) + self.mins[1])
+                    self.graphs[origin] = Graph(self.actions_count, (6,6), mins, maxes, self, origin, self.origins[origin] + self.targets[origin])
 
-        pv = self.is_safe(origin)
-        if self.cells[origin[0]][origin[1]][action] == -1:
-            if len(self.experiences[origin[0]][origin[1]][action]) == 1:
-                if violation == 0:
-                    self.cells[origin[0]][origin[1]][action] = 1
+                pv = self.is_safe(origin)
+                if self.cells[origin[0]][origin[1]][action] == -1:
+                    if len(self.experiences[origin[0]][origin[1]][action]) == 1:
+                        if violation == 0:
+                            self.cells[origin[0]][origin[1]][action] = 1
+                            if pv != self.is_safe(origin): self.update_location(origin)
+                elif violation == 1:
+                    self.cells[origin[0]][origin[1]][action] = -1
                     if pv != self.is_safe(origin): self.update_location(origin)
-        elif violation == 1:
-            self.cells[origin[0]][origin[1]][action] = -1
-            if pv != self.is_safe(origin): self.update_location(origin)
-        else:
-            self.evaluate_location(origin, action)
+                else:
+                    self.evaluate_location(origin, action)
 
     def calculate_conflux_force(self, experience, x, y):
         """
