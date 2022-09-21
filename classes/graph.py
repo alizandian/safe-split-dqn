@@ -7,9 +7,10 @@ import numpy as np
 class Graph:
     cells: List[List[int]] = None
 
-    def __init__(self, actions_count, dimention, mins, maxes, parent_dimention = None, location = None, experiences = None) -> None:
+    def __init__(self, actions_count, dimention, mins, maxes, parent: Graph = None, location = None, experiences = None) -> None:
+        self.parent = parent if parent != None else self
         self.dimention = dimention
-        self.parent_dimention = parent_dimention
+        self.parent_dimention = parent.dimention
         self.location = location
         self.mins = mins
         self.maxes = maxes
@@ -103,10 +104,20 @@ class Graph:
 
     def update_location(self, location):
         if location in self.origins:
-            for origin, action in self.origins[location]:
-                self.evaluate_location(origin, action)
+            for state, action in self.origins[location]:
+                self.parent.evaluate_state(state, action)
 
-    def evaluate_location(self, location, action):
+    def evaluate_state(self, state, action):
+        l = self.get_loc(state)
+        if l in self.graphs:
+            l = self.graphs[l].get_loc(state)
+            self.graphs[l].evaluate_location(l, action)
+        else:
+            self.evaluate_location(l, action)
+
+    def evaluate_location(self, state, action):
+        l = self.get_loc(state)
+        if l in self.graphs
         safe_counts = 0
         unsafe_counts = 0
         unsure_counts = 0
@@ -117,15 +128,14 @@ class Graph:
                 elif s == 1: safe_counts += 1
                 else: unsure_counts += 1
 
-        previous_value = self.cells[location[0]][location[1]][action]
-        if previous_value != -1:
+        pv = self.is_safe(location)
+        if self.cells[location[0]][location[1]][action] != -1:
             if unsafe_counts > 0:
                 self.cells[location[0]][location[1]][action] = -1
             else:
                 self.cells[location[0]][location[1]][action] = 1
 
-        if previous_value != self.cells[location[0]][location[1]][action]:
-            self.update_location(location)
+        if pv != self.is_safe(location): self.update_location(location)
         
     def get_unsafe_bound_experiences(self):
         exs = []
@@ -147,9 +157,9 @@ class Graph:
         self.experience_count += 1
 
         if target not in self.origins: self.origins[target] = set()
-        self.origins[target].add((origin, action))
+        self.origins[target].add((state, action))
         if origin not in self.targets: self.targets[origin] = set()
-        self.targets[origin].add((target, action))
+        self.targets[origin].add((next_state, action))
 
         if origin in self.graphs:
             self.graphs[origin].add_experience(experience)
@@ -158,19 +168,20 @@ class Graph:
             violating_xps = [x for x in xps if x[4] == 1]
             c = len(xps)
             v = len(violating_xps)
-            if c > 2 and v != c and v != 0 and self.parent_dimention != None:
+            if c > 2 and v != c and v != 0 and self.parent_dimention == None:
                 mins = ((origin[0] * self.teil[0]) + self.mins[0], (origin[1] * self.teil[1]) + self.mins[1])
                 maxes = (((origin[0] + 1) * self.teil[0]) + self.mins[0], ((origin[1] + 1) * self.teil[1]) + self.mins[1])
-                self.graphs[origin] = Graph(self.actions_count, (6,6), mins, maxes, self.dimention, origin, xps)
+                self.graphs[origin] = Graph(self.actions_count, (6,6), mins, maxes, self, origin, xps)
 
+        pv = self.is_safe(origin)
         if self.cells[origin[0]][origin[1]][action] == -1:
             if len(self.experiences[origin[0]][origin[1]][action]) == 1:
                 if violation == 0:
                     self.cells[origin[0]][origin[1]][action] = 1
-                    self.update_location(origin)
+                    if pv != self.is_safe(origin): self.update_location(origin)
         elif violation == 1:
             self.cells[origin[0]][origin[1]][action] = -1
-            self.update_location(origin)
+            if pv != self.is_safe(origin): self.update_location(origin)
         else:
             self.evaluate_location(origin, action)
 
