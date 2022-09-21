@@ -7,21 +7,21 @@ import numpy as np
 class Graph:
     cells: List[List[int]] = None
 
-    def __init__(self, actions_count, dimention, mins, maxes, parent_dimention, location = None, experiences = None) -> None:
+    def __init__(self, actions_count, dimention, mins, maxes, parent_dimention = None, location = None, experiences = None) -> None:
         self.dimention = dimention
         self.parent_dimention = parent_dimention
         self.location = location
         self.mins = mins
         self.maxes = maxes
-        self.len = maxes[0] - mins[0]
-        self.teil = self.len / dimention
+        self.len = (maxes[0] - mins[0], maxes[1] - mins[1])
+        self.teil = (self.len[0] / dimention[0], self.len[1] / dimention[1])
         self.nodes: List[Node] = []
         self.experience_count = 0
         self.actions_count = actions_count
         self.origins = {}
         self.targets = {}
-        self.experiences = [[[[] for _ in range(actions_count)] for _ in range(dimention)] for _ in range(dimention)]
-        self.cells = [[[0 for _ in range(actions_count)] for _ in range(dimention)] for _ in range(dimention)]
+        self.experiences = [[[[] for _ in range(actions_count)] for _ in range(dimention[0])] for _ in range(dimention[1])]
+        self.cells = [[[0 for _ in range(actions_count)] for _ in range(dimention[0])] for _ in range(dimention[1])]
         self.graphs: Dict[Tuple, Graph] = {} 
 
         if experiences != None:
@@ -32,19 +32,22 @@ class Graph:
 
     def get_safe_actions(self, state) -> list:
         location = self.get_loc(state)
-        safe_actions = []
-        for a, value in enumerate(self.cells[location[0]][location[1]]):
-            if value != -1:
-                safe_actions.append(a)
-        return safe_actions
+        if location in self.graphs:
+            return self.graphs[location].get_safe_actions(state)
+        else:
+            safe_actions = []
+            for a, value in enumerate(self.cells[location[0]][location[1]]):
+                if value != -1:
+                    safe_actions.append(a)
+            return safe_actions
 
     def feed_neural_network_feedback(self, values):
         unsafe_q_values = []
-        for y in range(self.dimention):
-            for x in range(self.dimention):
+        for y in range(self.dimention[1]):
+            for x in range(self.dimention[0]):
                 for a in range(self.actions_count):
                     if self.cells[x][y][a] == -1:
-                        unsafe_q_values.append(values[self.dimention-y-1][x][a])
+                        unsafe_q_values.append(values[self.dimention[1]-y-1][x][a])
 
         if len(unsafe_q_values) == 0:
             return
@@ -65,18 +68,18 @@ class Graph:
         new_min = min + ((max - min) * dmin)
         new_max = min + ((max - min) * dmax)
 
-        for y in range(self.dimention):
-            for x in range(self.dimention):
+        for y in range(self.dimention[1]):
+            for x in range(self.dimention[0]):
                 for a in range(self.actions_count):
-                    v = values[self.dimention-y-1][x][a]
+                    v = values[self.dimention[1]-y-1][x][a]
                     if v >= new_min and v <= new_max:
                         if self.cells[x][y][a] == 0:
                             self.cells[x][y][a] = -1
                             print("override")
 
     def get_loc(self, state):
-        x = self.clamp(int((state[0] - self.mins[0]) / self.len * self.dimention), 0, self.dimention-1)
-        y = self.clamp(int((state[1] - self.mins[1]) / self.len * self.dimention), 0, self.dimention-1)
+        x = self.clamp(int((state[0] - self.mins[0]) / self.len[0] * self.dimention[0]), 0, self.dimention[0]-1)
+        y = self.clamp(int((state[1] - self.mins[1]) / self.len[1] * self.dimention[1]), 0, self.dimention[1]-1)
 
         return (x, y)
 
@@ -126,8 +129,8 @@ class Graph:
         
     def get_unsafe_bound_experiences(self):
         exs = []
-        for y in range(self.dimention):
-            for x in range(self.dimention): 
+        for y in range(self.dimention[1]):
+            for x in range(self.dimention[0]): 
                 if self.is_safe((x, y)) == 1:
                     for a in range(self.actions_count):
                         if self.cells[x][y][a] == -1:
@@ -155,10 +158,10 @@ class Graph:
             violating_xps = [x for x in xps if x[4] == 1]
             c = len(xps)
             v = len(violating_xps)
-            if c > self.dimention * 5 and v != c and v != 0:
-                mins = ((origin[0] * self.teil) + self.mins[0], (origin[1] * self.teil) + self.mins[1])
-                maxes = (((origin[0] + 1) * self.teil) + self.mins[0], ((origin[1] + 1) * self.teil) + self.mins[1])
-                self.graphs[origin] = Graph(self.actions_count, max(self.dimention/2, 2), mins, maxes, self.dimention, origin, xps)
+            if c > 2 and v != c and v != 0 and self.parent_dimention != None:
+                mins = ((origin[0] * self.teil[0]) + self.mins[0], (origin[1] * self.teil[1]) + self.mins[1])
+                maxes = (((origin[0] + 1) * self.teil[0]) + self.mins[0], ((origin[1] + 1) * self.teil[1]) + self.mins[1])
+                self.graphs[origin] = Graph(self.actions_count, (6,6), mins, maxes, self.dimention, origin, xps)
 
         if self.cells[origin[0]][origin[1]][action] == -1:
             if len(self.experiences[origin[0]][origin[1]][action]) == 1:
@@ -230,10 +233,10 @@ class Graph:
 
     def visualize(self):
         draw_graph(self.nodes)
-        draw_graph_grid(self.nodes, (self.dimention, self.dimention))
+        draw_graph_grid(self.nodes)
 
     def exists(self, location) -> bool:
-        if location[0] >= 0 and location[0] < self.dimention and location[1] >= 0 and location[1] < self.dimention:
+        if location[0] >= 0 and location[0] < self.dimention[0] and location[1] >= 0 and location[1] < self.dimention[1]:
             return True
         return False
 
@@ -267,8 +270,8 @@ class Graph:
         Node.index = 0
         nodes: List[Node] = []
         assigned = []
-        for i in range(self.dimention):
-            for j in range(self.dimention):
+        for j in range(self.dimention[1]):
+            for i in range(self.dimention[0]):
                 l = (i, j)
                 if l in assigned: continue
                 assigned.append(l)

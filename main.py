@@ -26,14 +26,14 @@ def experiment_base(predefined_actions = None):
 def experiment_refined_experiences(predefined_actions = None):
     env = RoverEnv(seed=100)
     i_dim, o_dim, DQN_nn = SimplifiedCartPole_SafetyMonitor_NN(2,4)
-    agent = AgentIterativeSafetyGraph(i_dim, o_dim, DQN_nn, 10)
+    agent = AgentIterativeSafetyGraph(i_dim, o_dim, DQN_nn, (10, 10))
     actions, rewards = run_experiment("refined", predefined_actions, agent, env)
     return actions
 
 def experiment_refined_experiences_fixed_cartPole(predefined_actions = None):
     env = FixedCartPoleEnv(seed=100)
     i_dim, o_dim, DQN_nn = SimplifiedCartPole_SafetyMonitor_NN(2,2)
-    agent = AgentIterativeSafetyGraph(i_dim, o_dim, DQN_nn, 30)
+    agent = AgentIterativeSafetyGraph(i_dim, o_dim, DQN_nn, (6, 6))
     actions, rewards = run_experiment("refined", predefined_actions, agent, env)
     return actions
 
@@ -77,7 +77,7 @@ def run_experiment(experiment_name, predefined_actions, agent, env):
     return actions, rewards
 
 def record(experiment, episode, agent, env, state):
-    reso = 15
+    reso = (15, 15)
     c = agent.output_dim
     values = agent.dqn.get_snapshot(reso)
     accuracy = env.test_agent_accuracy(agent)
@@ -85,12 +85,12 @@ def record(experiment, episode, agent, env, state):
 
     rvs = []
     for _ in range(c):
-        rvs.append([[0]*reso for _ in range(reso)])
+        rvs.append([[0]*reso[0] for _ in range(reso[1])])
 
-    for y in range(reso):
-        for x in range(reso):
+    for y in range(reso[1]):
+        for x in range(reso[0]):
             for i in range(c):
-                rvs[i][reso-y-1][x] = values[reso-y-1][x][i]
+                rvs[i][reso[1]-y-1][x] = values[reso[1]-y-1][x][i]
 
     for i in range(c):
         rvs[i] = np.interp(rvs[i], [np.min(rvs[i]), np.max(rvs[i])], [-1, +1])

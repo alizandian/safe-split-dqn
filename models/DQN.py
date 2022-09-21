@@ -38,21 +38,23 @@ class DQN(object):
         self.update_q_target()
 
     def get_snapshot(self, reso):
-        values = [[0]*reso for i in range(reso)]
+        values = [[0]*reso[0] for i in range(reso[1])]
         states = []
-        for y in range(reso):
-            for x in range(reso):
-                d = 2 / reso
-                dd = d / 2
-                states.append(((x * d) + dd - 1, (y * d) + dd - 1))
+        for y in range(reso[1]):
+            for x in range(reso[0]):
+                dx = 2 / reso[0]
+                dy = 2 / reso[1]
+                ddx = dx / 2
+                ddy = dy / 2
+                states.append(((x * dx) + ddx - 1, (y * dy) + ddy - 1))
 
         results = self.Q_main.predict(np.stack(states))
-        r = np.reshape(results, (-1, reso, self.output_dim))
+        r = np.reshape(results, (-1, reso[0], self.output_dim))
 
-        for y in range(reso):
-            for x in range(reso):
+        for y in range(reso[1]):
+            for x in range(reso[0]):
                 v = r[y][x]
-                values[reso-y-1][x] = v
+                values[reso[1]-y-1][x] = v
 
         return values
 

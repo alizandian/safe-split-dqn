@@ -57,13 +57,13 @@ def draw_graph(nodes: List[Node]):
 
 def draw_graph_grid(nodes: List[Node]):
     root = tkinter.Tk()
-    w, h = 500
+    w, h = 500, 500
     canvas = tkinter.Canvas(root, bg="white", height=h, width=w)
 
     for node in nodes:
         for r in node.regions:
             x0, x1, y0, y1 = r.windowed_values(w, h)
-            canvas.create_rectangle((x0, y0, x1, y1), fill=colors[node.value])
+            canvas.create_rectangle((x0, h - y0, x1, h - y1), fill=colors[node.value])
 
     canvas.pack()
     root.mainloop()
