@@ -137,12 +137,30 @@ def state_converter(state):
     # index y = 190
     # x length = 16
 
-
+    ball_y = None
     sy = state[93:-(len(state) -1 -188)]
-    for xx in enumerate(sy):
-        sx = sy[8:-(len(state) -1 -151)]
+    for y, xx in enumerate(sy):
+        sx = xx[8:-(len(state) -1 -151)]
+        for c in sx:
+            if c[0] != 0:
+                # found the ball
+                ball_y = y + 1
+                break
+        if ball_y != None: break
 
-    pass
+    handler_x = None
+    counter = 0
+    for index, c in enumerate(state[190]):
+        if c[0] != 0:
+            counter += 1
+        else:
+            counter = 0
+        if counter >= 12:
+            # found the hanlder
+            handler_x = index - 8
+            break
+    
+    return handler_x, ball_y
 
 
 if __name__ == "__main__":
