@@ -121,11 +121,36 @@ class RoverEnv(gym.Env):
             self.viewer.close()
             self.viewer = None
 
+def state_converter(state):
+    # first dimention is y
+    # ball territory
+    # index x min = 8
+    # index x max = 151
+    # index y min = 93
+    # index y max = 188
+    # x length = 2
+    # y length = 4
+
+    # handler territory
+    # index x min = 8
+    # index x max = 151
+    # index y = 190
+    # x length = 16
+
+
+    sy = state[93:-(len(state) -1 -188)]
+    for xx in enumerate(sy):
+        sx = sy[8:-(len(state) -1 -151)]
+
+    pass
+
+
 if __name__ == "__main__":
     
     env = gym.make('BreakoutDeterministic-v4', render_mode='human') 
     env.reset()
     for _ in range(1000):
         e = env.step(env.action_space.sample())
+        x, y = state_converter(e[0])
         env.render()
     env.close()

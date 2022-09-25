@@ -134,11 +134,11 @@ class Graph:
                     else: unsure_counts += 1
 
         pv = self.is_safe(location)
-        if self.cells[location[0]][location[1]][action] != -1:
-            if unsafe_counts > 0:
-                self.cells[location[0]][location[1]][action] = -1
-            else:
-                self.cells[location[0]][location[1]][action] = 1
+        #if self.cells[location[0]][location[1]][action] != -1:
+        if unsafe_counts > 0:
+            self.cells[location[0]][location[1]][action] = -1
+        else:
+            self.cells[location[0]][location[1]][action] = 1
 
         if pv != self.is_safe(location): self.update_location(location)
         
@@ -182,14 +182,13 @@ class Graph:
                 if c > 2 and v != c and v != 0 and self.parent_dimention == None:
                     mins = ((origin[0] * self.teil[0]) + self.mins[0], (origin[1] * self.teil[1]) + self.mins[1])
                     maxes = (((origin[0] + 1) * self.teil[0]) + self.mins[0], ((origin[1] + 1) * self.teil[1]) + self.mins[1])
-                    self.graphs[origin] = Graph(self.actions_count, (4,4), mins, maxes, self, origin, self.origins[origin] + self.targets[origin])
+                    self.graphs[origin] = Graph(self.actions_count, (2,2), mins, maxes, self, origin, self.origins[origin] + self.targets[origin])
 
                 pv = self.is_safe(origin)
-                if self.cells[origin[0]][origin[1]][action] == -1:
+                if self.cells[origin[0]][origin[1]][action] != 1 and violation == 0:
                     if len(self.experiences[origin[0]][origin[1]][action]) == 1:
-                        if violation == 0:
-                            self.cells[origin[0]][origin[1]][action] = 1
-                            if pv != self.is_safe(origin): self.update_location(origin)
+                        self.cells[origin[0]][origin[1]][action] = 1
+                        if pv != self.is_safe(origin): self.update_location(origin)
                 elif violation == 1:
                     self.cells[origin[0]][origin[1]][action] = -1
                     if pv != self.is_safe(origin): self.update_location(origin)
