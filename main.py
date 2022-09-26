@@ -153,6 +153,6 @@ def plot(only_updates=False, only_accuracy=False):
         plt.show()
 
 if __name__ == "__main__":
-    actions = experiment_refined_experiences_atari()
+    actions = experiment_refined_experiences()
     actions = experiment_base(predefined_actions=actions)
     plot()

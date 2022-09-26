@@ -44,8 +44,19 @@ class Graph:
                     safe_actions.append(a)
             return safe_actions
 
+    # def get_all_unsafe_q_values(self, values):
+    #     unsafe_q_values = []
+    #     for y in range(self.dimention[1]):
+    #         for x in range(self.dimention[0]):
+    #             if (x,y) in self.graphs:
+    #                 unsafe_q_values.extend(self.graphs[(x,y)].get_all_unsafe_q_values())
+    #                 continue
+    #             for a in range(self.actions_count):
+    #                 if self.cells[x][y][a] == -1:
+    #                     unsafe_q_values.append(values[self.dimention[1]-y-1][x][a])
+
+
     def feed_neural_network_feedback(self, values):
-        return
         unsafe_q_values = []
         for y in range(self.dimention[1]):
             for x in range(self.dimention[0]):
@@ -60,6 +71,7 @@ class Graph:
         min = np.min(values)
         max = np.max(values)
 
+        print(min)
         if min > -0.8:
             return
 
@@ -152,7 +164,7 @@ class Graph:
                 if self.is_safe((x, y)) == 1:
                     for a in range(self.actions_count):
                         if self.cells[x][y][a] == -1:
-                            unsafes = [(s,a,r,n,v) for s,a,r,n,v in self.refine_experiences(self.experiences[x][y][a]) if v == 1]
+                            unsafes = [(s,a,r,n,v) for s,a,r,n,v in self.parent.refine_experiences(self.experiences[x][y][a]) if v == 1]
                             if len(unsafes) > 0:
                                 exs.append(unsafes[-1])
         return exs
