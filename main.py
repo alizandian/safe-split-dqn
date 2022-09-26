@@ -1,5 +1,6 @@
 from environments.FixedCartPoleEnv import FixedCartPoleEnv
 from environments.RoverEnv import RoverEnv
+from environments.AtariEnv import AtariEnv
 from models.AgentSafeDQN import AgentSafeDQN
 from models.AgentSafeDQNSplit import AgentSafeDQNSplit
 from models.AgentIterativeSafetyGraph import AgentIterativeSafetyGraph
@@ -26,6 +27,13 @@ def experiment_base(predefined_actions = None):
 def experiment_refined_experiences(predefined_actions = None):
     env = RoverEnv(seed=100)
     i_dim, o_dim, DQN_nn = SimplifiedCartPole_SafetyMonitor_NN(2,4)
+    agent = AgentIterativeSafetyGraph(i_dim, o_dim, DQN_nn, (10, 10))
+    actions, rewards = run_experiment("refined", predefined_actions, agent, env)
+    return actions
+
+def experiment_refined_experiences_atari(predefined_actions = None):
+    env = AtariEnv(seed=100)
+    i_dim, o_dim, DQN_nn = SimplifiedCartPole_SafetyMonitor_NN(2,2)
     agent = AgentIterativeSafetyGraph(i_dim, o_dim, DQN_nn, (10, 10))
     actions, rewards = run_experiment("refined", predefined_actions, agent, env)
     return actions
@@ -63,6 +71,7 @@ def run_experiment(experiment_name, predefined_actions, agent, env):
             if VISUALISATION: env.render()
             if violation: 
                 agent.train()
+                env.reset()
                 break
 
 
@@ -144,6 +153,6 @@ def plot(only_updates=False, only_accuracy=False):
         plt.show()
 
 if __name__ == "__main__":
-    actions = experiment_refined_experiences_fixed_cartPole()
+    actions = experiment_refined_experiences_atari()
     actions = experiment_base(predefined_actions=actions)
     plot()

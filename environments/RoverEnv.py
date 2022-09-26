@@ -4,7 +4,6 @@ import math
 import gym
 import random
 import numpy as np
-import scipy.misc as smp
 from gym import spaces, logger
 from gym.utils import seeding
 import numpy as np
