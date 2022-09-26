@@ -179,7 +179,7 @@ class Graph:
                 violating_xps = [x for x in xps if x[4] == 1]
                 c = len(xps)
                 v = len(violating_xps)
-                if c > 2 and v != c and v != 0 and self.parent_dimention == None:
+                if c > 2 and v != c and v != 0 and self.parent_dimention == None and False:
                     mins = ((origin[0] * self.teil[0]) + self.mins[0], (origin[1] * self.teil[1]) + self.mins[1])
                     maxes = (((origin[0] + 1) * self.teil[0]) + self.mins[0], ((origin[1] + 1) * self.teil[1]) + self.mins[1])
                     self.graphs[origin] = Graph(self.actions_count, (2,2), mins, maxes, self, origin, self.origins[origin] + self.targets[origin])

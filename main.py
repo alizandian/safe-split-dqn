@@ -12,7 +12,7 @@ import time
 
 MAX_EPISODE = 401
 VISUALISATION = True
-PLOT_INTERVAL = 10
+PLOT_INTERVAL = 50
 ARTIFICIAL_DELAY = -0.1
 plot_values: Dict[str, Dict[int, Tuple[list, float]]] = {} # values, env and accuracy (tuple) of each episode (second dict) of each experiment (first dict).
 
@@ -33,7 +33,7 @@ def experiment_refined_experiences(predefined_actions = None):
 
 def experiment_refined_experiences_atari(predefined_actions = None):
     env = AtariEnv(seed=100)
-    i_dim, o_dim, DQN_nn = SimplifiedCartPole_SafetyMonitor_NN(2,2)
+    i_dim, o_dim, DQN_nn = SimplifiedCartPole_SafetyMonitor_NN(2,3)
     agent = AgentIterativeSafetyGraph(i_dim, o_dim, DQN_nn, (10, 10))
     actions, rewards = run_experiment("refined", predefined_actions, agent, env)
     return actions

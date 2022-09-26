@@ -1,3 +1,5 @@
+
+from cmath import isnan
 import numpy as np
 from gym import spaces
 import numpy as np
@@ -12,15 +14,16 @@ class AtariEnv(gym.Env):
         self.min = -100
         self.env = gym.make('BreakoutDeterministic-v4', render_mode='human') 
         self.seed = seed
-        self.action_space = spaces.Discrete(4)
+        self.action_space = spaces.Discrete(3)
         self.observation_space = spaces.Box(self.min, self.max, (2,), dtype=np.float32)
         self.state = None
         self.step_count = 0
         self.normalizer=[0.01, 0.01]
         self.denormalizer=[100, 100]
         self.previous_y = None
-        self.action_names = []
+        self.action_names = ['idle', 'right', 'left']
         self.unsafe_areas = []
+        self.starting = True
         self.violating_actions_samples = []
 
 
@@ -40,17 +43,26 @@ class AtariEnv(gym.Env):
         err_msg = "%r (%s) invalid" % (action, type(action))
         assert self.action_space.contains(action), err_msg
 
-        result_state = self.env.step(action)
+        while(self.starting == True):
+            result_state = self.env.step(1)
+            self.state_converter(result_state)
+            if not math.isnan(self.state[1]):
+                self.starting = False
+
+
+        result_state = self.env.step(action+1)
         self.state_converter(result_state)
 
-
         done = False
-        if not isinstance(self.state[1], int):
+        print(self.previous_y)
+        if math.isnan(self.state[1]):
             if self.previous_y < 0:
                 self.state[1] = -100
             else:
                 done = True
                 self.state[1] = 100
+        else:
+            self.previous_y = self.state[1]
 
         if not done:
             reward = 1.0
@@ -64,6 +76,7 @@ class AtariEnv(gym.Env):
         self.state = self.np_random.uniform(low=-0.05, high=0.05, size=(2,))
         self.step_count = 0
         self.previous_y = self.state[1]
+        self.starting = True
         return np.array(self.normalize(self.state), dtype=np.float32)
 
     def render(self, mode="human"):
@@ -88,13 +101,15 @@ class AtariEnv(gym.Env):
         os = s[0]
 
         ball_y = None
+        ball_x = None
         sy = os[93:-(len(os) -1 -188)]
         for y, xx in enumerate(sy):
             sx = xx[8:-(len(os) -1 -151)]
-            for c in sx:
+            for i, c in enumerate(sx):
                 if c[0] != 0:
                     # found the ball
                     ball_y = y + 1
+                    ball_x = i + 1
                     break
             if ball_y != None: break
 
@@ -109,10 +124,16 @@ class AtariEnv(gym.Env):
                 # found the hanlder
                 handler_x = index - 8
                 break
+
+        # align = False
+        # if ((ball_x -1) >= (handler_x - 8)) and ((ball_x + 1) <= (handler_x + 8)):
+        #     align = True 
         x = ((handler_x/len(os[190])) - 0.5) * 200
         y = ((ball_y/len(sy)) - 0.5) * 200 if ball_y != None else None
         self.state[0] = x
         self.state[1] = y
+
+        # return align
 
 # if __name__ == "__main__":
     
