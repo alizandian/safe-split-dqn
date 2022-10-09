@@ -24,7 +24,14 @@ class AgentSafeDQN(object):
                         gamma = gamma,
                         verbose = verbose)
 
-        self.epsilon = epsilon
+        self.epsilon = 1.0
+        self.epsilon_min = 0.1
+        self.epsilon_max = 1.0
+        self.epsilon_interval = (self.epsilon_max - self.epsilon_min)
+        self.frame_count = 0
+        self.epsilon_random_frames = 500
+        self.epsilon_greedy_frames = 500
+        self.previous_action_type = -1
 
         self.replay_buffer = ReplayBuffer(replay_buffer_size)
         self.counterexample_buffer = ReplayBuffer(replay_buffer_size)
@@ -46,20 +53,29 @@ class AgentSafeDQN(object):
         if violation != 0:
             self.counterexample_buffer.append(e)
 
-    def get_action(self, input, theta = 0.9):
-        safety_q_val = self.dqn.get_q_values(np.array(input)[np.newaxis])[0]
-        mask = [ 1 if val >= theta else 0 for val in safety_q_val]
-        action_q_val = self.base_dqn.get_q_values(np.array(input)[np.newaxis])[0]
-        final_action_q_val = [ q * m for q, m in zip(action_q_val, mask) ]
-
-        # if there is no safe action, select the best action q-val
-        if mask.count(1) == 0:
-            return np.argmax(action_q_val)
+    def get_action(self, input, theta = 0.0):
+        self.frame_count += 1
+        self.epsilon -= self.epsilon_interval / self.epsilon_greedy_frames
+        self.epsilon = max(self.epsilon, self.epsilon_min)
         
-        if np.random.uniform() <= self.epsilon:
-            valid_actions = [ i for i, x in enumerate(mask) if x == 1]
-            return random.choice(valid_actions)
-        else: 
+        if self.frame_count < self.epsilon_random_frames or self.epsilon > np.random.rand(1)[0]:
+            if self.previous_action_type != 0: 
+                print("--------------------------RANDOM---------------------------")
+                self.previous_action_type = 0
+            return np.random.choice(self.output_dim)
+
+        else:
+            if self.previous_action_type != 1: 
+                print("--------------------------CHOSE----------------------------")
+                self.previous_action_type = 1
+
+            safety_q_val = self.base_dqn.get_q_values(np.array(input)[np.newaxis])[0]
+            mask = [ 1 if val >= theta else 0 for val in safety_q_val]
+            action_q_val = self.dqn.get_q_values(np.array(input)[np.newaxis])[0]
+            final_action_q_val = [ q * m for q, m in zip(action_q_val, mask) ]
+            if mask.count(1) == 0:
+                return np.argmax(action_q_val)
+
             return np.argmax(final_action_q_val)
 
     def train(self, batch_size=32, epoch=1):
