@@ -1,5 +1,5 @@
 from models.ReplayBuffer import ReplayBuffer
-from models.DQN import DQN
+from models.DQN_Base import DQN_Base as DQN 
 import numpy as np
 import random
 

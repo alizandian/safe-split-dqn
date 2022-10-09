@@ -1,5 +1,7 @@
 
 from cmath import isnan
+from re import X
+from xml.sax import SAXNotRecognizedException, saxutils
 import numpy as np
 from gym import spaces
 import numpy as np
@@ -17,10 +19,12 @@ class AtariEnv(gym.Env):
         self.action_space = spaces.Discrete(3)
         self.observation_space = spaces.Box(self.min, self.max, (2,), dtype=np.float32)
         self.state = None
+        self.ball_y = None
         self.step_count = 0
         self.normalizer=[0.01, 0.01]
         self.denormalizer=[100, 100]
         self.previous_y = None
+        self.previous_x = None
         self.action_names = ['idle', 'right', 'left']
         self.unsafe_areas = []
         self.starting = True
@@ -54,15 +58,15 @@ class AtariEnv(gym.Env):
         self.state_converter(result_state)
 
         done = False
-        print(self.previous_y)
         if math.isnan(self.state[1]):
             if self.previous_y < 0:
-                self.state[1] = -100
+                self.state[1] = 0
             else:
                 done = True
-                self.state[1] = 100
+                self.state[1] = self.previous_x
         else:
-            self.previous_y = self.state[1]
+            self.previous_y = self.ball_y
+            self.previous_x = self.state[1]
 
         if not done:
             reward = 1.0
@@ -89,7 +93,7 @@ class AtariEnv(gym.Env):
         # index x max = 151
         # index y min = 93
         # index y max = 188
-        # x length = 2
+        # x length = 2s
         # y length = 4
 
         # handler territory
@@ -99,17 +103,15 @@ class AtariEnv(gym.Env):
         # x length = 16
 
         os = s[0]
-
         ball_y = None
         ball_x = None
         sy = os[93:-(len(os) -1 -188)]
         for y, xx in enumerate(sy):
-            sx = xx[8:-(len(os) -1 -151)]
+            sx = xx[8:-(len(xx) -1 -151)]
             for i, c in enumerate(sx):
                 if c[0] != 0:
-                    # found the ball
                     ball_y = y + 1
-                    ball_x = i + 1
+                    ball_x = i
                     break
             if ball_y != None: break
 
@@ -121,19 +123,15 @@ class AtariEnv(gym.Env):
             else:
                 counter = 0
             if counter >= 12:
-                # found the hanlder
                 handler_x = index - 8
                 break
 
-        # align = False
-        # if ((ball_x -1) >= (handler_x - 8)) and ((ball_x + 1) <= (handler_x + 8)):
-        #     align = True 
-        x = ((handler_x/len(os[190])) - 0.5) * 200
-        y = ((ball_y/len(sy)) - 0.5) * 200 if ball_y != None else None
-        self.state[0] = x
-        self.state[1] = y
-
-        # return align
+        hx = ((handler_x/len(os[190])) - 0.5) * 200
+        bx = ((ball_x/len(sx)) - 0.5) * 200 if ball_x != None else None
+        by = ((ball_y/len(sy)) - 0.5) * 200 if ball_y != None else None
+        self.state[0] = hx
+        self.state[1] = bx
+        self.ball_y = by
 
 # if __name__ == "__main__":
     
