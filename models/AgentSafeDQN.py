@@ -25,12 +25,12 @@ class AgentSafeDQN(object):
                         verbose = verbose)
 
         self.epsilon = 1.0
-        self.epsilon_min = 0.1
+        self.epsilon_min = 0.05
         self.epsilon_max = 1.0
         self.epsilon_interval = (self.epsilon_max - self.epsilon_min)
         self.frame_count = 0
-        self.epsilon_random_frames = 500
-        self.epsilon_greedy_frames = 500
+        self.epsilon_random_frames = 100
+        self.epsilon_greedy_frames = 100
         self.previous_action_type = -1
 
         self.replay_buffer = ReplayBuffer(replay_buffer_size)
@@ -58,7 +58,8 @@ class AgentSafeDQN(object):
         self.epsilon -= self.epsilon_interval / self.epsilon_greedy_frames
         self.epsilon = max(self.epsilon, self.epsilon_min)
         
-        if self.frame_count < self.epsilon_random_frames or self.epsilon > np.random.rand(1)[0]:
+        #if self.frame_count < self.epsilon_random_frames or self.epsilon > np.random.rand(1)[0]:
+        if False:
             if self.previous_action_type != 0: 
                 print("--------------------------RANDOM---------------------------")
                 self.previous_action_type = 0
@@ -69,9 +70,9 @@ class AgentSafeDQN(object):
                 print("--------------------------CHOSE----------------------------")
                 self.previous_action_type = 1
 
-            safety_q_val = self.base_dqn.get_q_values(np.array(input)[np.newaxis])[0]
+            safety_q_val = self.dqn.get_q_values(np.array(input)[np.newaxis])[0]
             mask = [ 1 if val >= theta else 0 for val in safety_q_val]
-            action_q_val = self.dqn.get_q_values(np.array(input)[np.newaxis])[0]
+            action_q_val = self.base_dqn.get_q_values(np.array(input)[np.newaxis])[0]
             final_action_q_val = [ q * m for q, m in zip(action_q_val, mask) ]
             if mask.count(1) == 0:
                 return np.argmax(action_q_val)
