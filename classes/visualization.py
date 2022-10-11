@@ -50,7 +50,9 @@ def draw_graph(nodes: List[Node]):
     G.add_edges_from(graph_edges)
     pos = nx.spring_layout(G)
     plt.figure()
-    nx.draw(G, pos, edge_color='black', width=1, linewidths=1, node_color='pink', alpha=0.9, labels=labels)
+    colors = {"SAFE": "white", "UNSURE": "grey", "UNSAFE": "red", "INCREASE RESOLUTION!": "orange"}
+    color_values = [colors[label] for label in labels.values()]
+    nx.draw(G, pos, edge_color='black', node_size=4000, width=1, linewidths=1, node_color=color_values, alpha=0.9, labels=labels)
     nx.draw_networkx_edge_labels(G, pos, edge_labels=edges_labels, font_color='red')
     plt.axis('off')
     plt.show()

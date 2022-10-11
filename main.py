@@ -13,7 +13,7 @@ import time
 
 MAX_EPISODE = 401
 VISUALISATION = True
-PLOT_INTERVAL = 100
+PLOT_INTERVAL = 1
 ARTIFICIAL_DELAY = -0.1
 plot_values: Dict[str, Dict[int, Tuple[list, gym.Env, float]]] = {} # values, env and accuracy (tuple) of each episode (second dict) of each experiment (first dict).
 
@@ -84,7 +84,7 @@ def run_experiment(experiment_name, predefined_actions, agent, env):
                 break
 
 
-        if i % PLOT_INTERVAL == 0 and i != 0: 
+        if i % PLOT_INTERVAL == 0: 
             record(experiment_name, i, agent, env, next_state)
             if hasattr(agent, "safety_graph"):
                 agent.safety_graph.visualize()
@@ -162,7 +162,7 @@ def plot(only_updates=False, only_accuracy=False):
         plt.show()
 
 if __name__ == "__main__":
-    actions = experiment_fixed_cartPole()
+    actions = experiment_refined_experiences()
     actions = experiment_refined_experiences_atari()
     actions = experiment_base(predefined_actions=actions)
     plot()

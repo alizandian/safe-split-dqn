@@ -1,7 +1,6 @@
 from models.ReplayBuffer import ReplayBuffer
 from models.DQNSplit import DQNSplit
 from models.DQN import DQN
-from classes.visualization import draw_table
 import numpy as np
 
 class AgentSafeDQNSplit(object):
