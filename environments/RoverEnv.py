@@ -55,7 +55,6 @@ class RoverEnv(gym.Env):
         self.normalizer=[0.01, 0.01]
         self.denormalizer=[100, 100]
         self.previous_location = (-2,-2)
-        self.action_names = ['down', 'left', 'right', 'up']
         # MIN X MIN Y MAX X MAX Y
         self.unsafe_areas = [
             (-70, -70, -45, -45), 
@@ -88,6 +87,27 @@ class RoverEnv(gym.Env):
             ((-90, 0), 1),
             ((-90, -30), 1),
         ]
+        self.action_names = ['down', 'left', 'right', 'up']
+        self.safe_samples = [
+            ((-90, -30), [2,3]),
+            ((-90, 0), [0,2,3]),
+            ((-90, 30), [0,2,3]),
+            ((-90, 60), [0,2]),
+            ((-60, -30), [1,2,3]),
+            ((-60, 90), [0,2]),
+            ((-30, -30), [1,2,3]),
+            ((-30, 90), [0,1,2]),
+            ((0, -30), [1,2,3]),
+            ((0, 90), [0,1,2]),
+            ((30, -30), [1,2,3]),
+            ((30, 30), [0,1,3]),
+            ((30, 60), [0,1,3]),
+            ((30, 90), [0,1,2]),
+            ((60, -30), [1,2,3]),
+            ((90, -30), [1,3]),
+            ((90, 0), [0,1]),
+            ((90, 90), [1])
+        ]
 
 
     def test_agent_accuracy(self, agent):
@@ -97,7 +117,12 @@ class RoverEnv(gym.Env):
             a = agent.get_action(self.normalize(state))
             if a == action: error += 1
 
-        return (1.0 - error/len(self.violating_actions_samples)) * 100
+        for state, actions in self.safe_samples:
+            a = agent.get_action(self.normalize(state))
+            if a not in actions: error += 1
+
+        length = len(self.violating_actions_samples) + len(self.safe_samples)
+        return (1.0 - error/length) * 100
 
     def normalize(self, state):
         return (state[0] * self.normalizer[0], state[1] * self.normalizer[1])

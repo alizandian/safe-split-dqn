@@ -13,7 +13,7 @@ import time
 
 MAX_EPISODE = 401
 VISUALISATION = True
-PLOT_INTERVAL = 1
+PLOT_INTERVAL = 15
 ARTIFICIAL_DELAY = -0.1
 plot_values: Dict[str, Dict[int, Tuple[list, gym.Env, float]]] = {} # values, env and accuracy (tuple) of each episode (second dict) of each experiment (first dict).
 
@@ -162,7 +162,6 @@ def plot(only_updates=False, only_accuracy=False):
         plt.show()
 
 if __name__ == "__main__":
-    actions = experiment_refined_experiences()
-    actions = experiment_refined_experiences_atari()
-    actions = experiment_base(predefined_actions=actions)
+    actions = experiment_base()
+    actions = experiment_refined_experiences(actions)
     plot()
