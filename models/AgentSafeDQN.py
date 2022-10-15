@@ -1,5 +1,6 @@
+from pickle import TRUE
 from models.ReplayBuffer import ReplayBuffer
-from models.DQN_Base import DQN_Base as DQN 
+from models.DQN_Base import DQN_Base
 import numpy as np
 import random
 
@@ -12,13 +13,13 @@ class AgentSafeDQN(object):
         self.input_dim = input_dim
         self.output_dim = output_dim
 
-        self.base_dqn = DQN(input_dim = input_dim, 
+        self.base_dqn = DQN_Base(input_dim = input_dim, 
                         output_dim = output_dim,
                         nn_model = nn_model,
                         gamma = gamma,
                         verbose = verbose)
 
-        self.dqn = DQN(input_dim = input_dim, 
+        self.dqn = DQN_Base(input_dim = input_dim, 
                         output_dim = output_dim,
                         nn_model = monitor_nn_model,
                         gamma = gamma,
@@ -59,7 +60,7 @@ class AgentSafeDQN(object):
         self.epsilon = max(self.epsilon, self.epsilon_min)
         
         #if self.frame_count < self.epsilon_random_frames or self.epsilon > np.random.rand(1)[0]:
-        if False:
+        if True:
             if self.previous_action_type != 0: 
                 print("--------------------------RANDOM---------------------------")
                 self.previous_action_type = 0
