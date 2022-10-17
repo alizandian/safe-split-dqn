@@ -13,13 +13,13 @@ class AgentSafeDQN(object):
         self.input_dim = input_dim
         self.output_dim = output_dim
 
-        self.base_dqn = DQN_Base(input_dim = input_dim, 
+        self.dqn = DQN_Base(input_dim = input_dim, 
                         output_dim = output_dim,
                         nn_model = nn_model,
                         gamma = gamma,
                         verbose = verbose)
 
-        self.dqn = DQN_Base(input_dim = input_dim, 
+        self.monitor_dqn = DQN_Base(input_dim = input_dim, 
                         output_dim = output_dim,
                         nn_model = monitor_nn_model,
                         gamma = gamma,
@@ -30,8 +30,8 @@ class AgentSafeDQN(object):
         self.epsilon_max = 1.0
         self.epsilon_interval = (self.epsilon_max - self.epsilon_min)
         self.frame_count = 0
-        self.epsilon_random_frames = 100
-        self.epsilon_greedy_frames = 100
+        self.epsilon_random_frames = 300
+        self.epsilon_greedy_frames = 300
         self.previous_action_type = -1
 
         self.replay_buffer = ReplayBuffer(replay_buffer_size)
@@ -54,13 +54,12 @@ class AgentSafeDQN(object):
         if violation != 0:
             self.counterexample_buffer.append(e)
 
-    def get_action(self, input, theta = 0.0):
+    def get_action(self, input, theta = 0.9):
         self.frame_count += 1
         self.epsilon -= self.epsilon_interval / self.epsilon_greedy_frames
         self.epsilon = max(self.epsilon, self.epsilon_min)
         
-        #if self.frame_count < self.epsilon_random_frames or self.epsilon > np.random.rand(1)[0]:
-        if True:
+        if self.frame_count < self.epsilon_random_frames or self.epsilon > np.random.rand(1)[0]:
             if self.previous_action_type != 0: 
                 print("--------------------------RANDOM---------------------------")
                 self.previous_action_type = 0
@@ -71,14 +70,20 @@ class AgentSafeDQN(object):
                 print("--------------------------CHOSE----------------------------")
                 self.previous_action_type = 1
 
-            safety_q_val = self.dqn.get_q_values(np.array(input)[np.newaxis])[0]
+            safety_q_val = self.monitor_dqn.get_q_values(np.array(input)[np.newaxis])[0]
             mask = [ 1 if val >= theta else 0 for val in safety_q_val]
-            action_q_val = self.base_dqn.get_q_values(np.array(input)[np.newaxis])[0]
+            action_q_val = self.dqn.get_q_values(np.array(input)[np.newaxis])[0]
             final_action_q_val = [ q * m for q, m in zip(action_q_val, mask) ]
+
+            # if there is no safe action, select the best action q-val
             if mask.count(1) == 0:
                 return np.argmax(action_q_val)
-
-            return np.argmax(final_action_q_val)
+            
+            if np.random.uniform() <= self.epsilon:
+                valid_actions = [ i for i, x in enumerate(mask) if x == 1]
+                return random.choice(valid_actions)
+            else: 
+                return np.argmax(final_action_q_val)
 
     def train(self, batch_size=32, epoch=1):
         batch_size_ = min(batch_size, len(self.replay_buffer))
@@ -98,23 +103,23 @@ class AgentSafeDQN(object):
             transitions_action = [ [s,a,r,n,d] for s,a,r,n,d,v in transitions]
             transitions_monitor = [ [s,a,v,n,d] for s,a,r,n,d,v in transitions]
 
-            loss_action += self.base_dqn.learn(transitions_action)
-            loss_monitor += self.dqn.learn(transitions_monitor)
+            loss_action += self.dqn.learn(transitions_action)
+            loss_monitor += self.monitor_dqn.learn(transitions_monitor)
 
         # Repeat the monitor DQN training only with the counterexample data
         batch_size_ = min(batch_size, len(self.counterexample_buffer))
         for i in range(0, epoch_):
             transitions = self.counterexample_buffer.sample(batch_size_) 
             transitions_monitor = [ [s,a,v,n,d] for s,a,r,n,d,v in transitions]
-            loss_monitor += self.dqn.learn(transitions_monitor)
+            loss_monitor += self.monitor_dqn.learn(transitions_monitor)
 
         loss_action /= epoch_
         loss_monitor /= (epoch_ * 2)
 
         self.update_counter += 1
         if self.update_counter >= self.update_interval:
-            self.base_dqn.update_q_target()
             self.dqn.update_q_target()
+            self.monitor_dqn.update_q_target()
             self.update_counter = 0
 
         return loss_action, loss_monitor
@@ -123,9 +128,9 @@ class AgentSafeDQN(object):
         return np.random.randint(self.output_dim)
 
     def save_model(self, file_name_dqn, file_name_monitor):
-        self.base_dqn.save(file_name_dqn)
-        self.dqn.save(file_name_monitor)
+        self.dqn.save(file_name_dqn)
+        self.monitor_dqn.save(file_name_monitor)
 
     def load_model(self, file_name_dqn, file_name_monitor):
-        self.base_dqn.load(file_name_dqn)
-        self.dqn.load(file_name_monitor)
+        self.dqn.load(file_name_dqn)
+        self.monitor_dqn.load(file_name_monitor)

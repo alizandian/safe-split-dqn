@@ -71,7 +71,7 @@ class Graph:
         min = np.min(values)
         max = np.max(values)
 
-        print(min)
+        #print(min)
         if min > -0.8:
             return
 

@@ -11,9 +11,9 @@ from typing import Dict, Tuple
 import time
 
 
-MAX_EPISODE = 401
-VISUALISATION = True
-PLOT_INTERVAL = 15
+MAX_EPISODE = 120
+VISUALISATION = False
+PLOT_INTERVAL = 10
 ARTIFICIAL_DELAY = -0.1
 plot_values: Dict[str, Dict[int, Tuple[list, gym.Env, float]]] = {} # values, env and accuracy (tuple) of each episode (second dict) of each experiment (first dict).
 
@@ -63,7 +63,10 @@ def run_experiment(experiment_name, predefined_actions, agent, env):
         state = env.reset()
         episode_reward = 0
 
+        e = 0
+        maxE = 100
         while True:
+            e += 1
             action = None
             if predefined_actions != None and action_index < len(predefined_actions):
                 action = predefined_actions[action_index]
@@ -82,13 +85,16 @@ def run_experiment(experiment_name, predefined_actions, agent, env):
                 agent.train()
                 env.reset()
                 break
+            if e >= maxE:
+                env.reset()
+                break
 
 
         if i % PLOT_INTERVAL == 0: 
             record(experiment_name, i, agent, env, next_state)
-            if hasattr(agent, "safety_graph"):
-                agent.safety_graph.visualize()
-            plot(only_updates=True, only_accuracy=False)
+            #if hasattr(agent, "safety_graph"):
+                #agent.safety_graph.visualize()
+            #plot(only_updates=True, only_accuracy=False)
 
         rewards.append(episode_reward) 
         print("Episode {0}/{1} -- reward {2}".format(i+1, MAX_EPISODE, episode_reward)) 
@@ -141,7 +147,7 @@ def plot_output_4(experiment_name, values, accuracy, only_accuracy, env, cmap='h
 
     plt.show() 
 
-def plot(only_updates=False, only_accuracy=False): 
+def plot(only_updates=False, only_accuracy=False, only_comparision=False): 
     if only_updates:
         last_experiment = list(plot_values.values())[-1]
         values, env, accuracy = list(last_experiment.values())[-1]
@@ -155,13 +161,13 @@ def plot(only_updates=False, only_accuracy=False):
             for episode, (values, env, accuracy) in plot_values[experiment].items():
                 episodes[experiment].append(episode)
                 accuracies[experiment].append(accuracy)
-                plot_output_4(experiment, values, accuracy, only_accuracy, env)
+                if not only_comparision:plot_output_4(experiment, values, accuracy, only_accuracy, env)
         for experiment in plot_values.keys():
             plt.plot(episodes[experiment], accuracies[experiment], label = experiment, linestyle="-.")
         plt.legend()
         plt.show()
 
 if __name__ == "__main__":
-    actions = experiment_base()
-    actions = experiment_refined_experiences(actions)
-    plot()
+    actions = experiment_refined_experiences()
+    actions = experiment_base(actions)
+    plot(only_comparision=True)
