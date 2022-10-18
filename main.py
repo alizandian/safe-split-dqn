@@ -7,15 +7,16 @@ from models.AgentSafeDQNSplit import AgentSafeDQNSplit
 from models.AgentIterativeSafetyGraph import AgentIterativeSafetyGraph
 from experiment.nn_config import *
 from matplotlib import pyplot as plt
-from typing import Dict, Tuple
+from typing import Dict, Tuple, List
 import time
 
 
-MAX_EPISODE = 120
+MAX_EPISODE = 91
 VISUALISATION = False
 PLOT_INTERVAL = 10
 ARTIFICIAL_DELAY = -0.1
 plot_values: Dict[str, Dict[int, Tuple[list, gym.Env, float]]] = {} # values, env and accuracy (tuple) of each episode (second dict) of each experiment (first dict).
+episode_info: Dict[str, list] = {}
 
 def experiment_base(predefined_actions = None):
     env = RoverEnv(seed=100)
@@ -89,9 +90,11 @@ def run_experiment(experiment_name, predefined_actions, agent, env):
                 env.reset()
                 break
 
+        if experiment_name not in episode_info: episode_info[experiment_name] = {}
+        episode_info[experiment_name][i] = e
 
         if i % PLOT_INTERVAL == 0: 
-            record(experiment_name, i, agent, env, next_state)
+            record(experiment_name, i, agent, env)
             #if hasattr(agent, "safety_graph"):
                 #agent.safety_graph.visualize()
             #plot(only_updates=True, only_accuracy=False)
@@ -100,7 +103,7 @@ def run_experiment(experiment_name, predefined_actions, agent, env):
         print("Episode {0}/{1} -- reward {2}".format(i+1, MAX_EPISODE, episode_reward)) 
     return actions, rewards
 
-def record(experiment, episode, agent, env, state):
+def record(experiment, episode, agent, env):
     reso = (15, 15)
     c = agent.output_dim
     values = agent.dqn.get_snapshot(reso)
@@ -147,6 +150,13 @@ def plot_output_4(experiment_name, values, accuracy, only_accuracy, env, cmap='h
 
     plt.show() 
 
+def plot_episode_info():
+    for experiment in episode_info.keys():
+        plt.plot(episode_info[experiment].keys(), episode_info[experiment].values(), label = experiment, linestyle="-.")
+    plt.legend()
+    plt.show()
+
+
 def plot(only_updates=False, only_accuracy=False, only_comparision=False): 
     if only_updates:
         last_experiment = list(plot_values.values())[-1]
@@ -169,5 +179,6 @@ def plot(only_updates=False, only_accuracy=False, only_comparision=False):
 
 if __name__ == "__main__":
     actions = experiment_refined_experiences()
-    actions = experiment_base(actions)
-    plot(only_comparision=True)
+    actions = experiment_base()
+    #plot(only_comparision=True)
+    plot_episode_info()
