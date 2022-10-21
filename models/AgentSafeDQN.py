@@ -25,12 +25,12 @@ class AgentSafeDQN(object):
                         verbose = verbose)
 
         self.epsilon = 1.0
-        self.epsilon_min = 0.001
+        self.epsilon_min = 0.01
         self.epsilon_max = 1.0
         self.epsilon_interval = (self.epsilon_max - self.epsilon_min)
         self.frame_count = 0
-        self.epsilon_random_frames = 400
-        self.epsilon_greedy_frames = 400
+        self.epsilon_random_frames = 300
+        self.epsilon_greedy_frames = 300
         self.previous_action_type = -1
 
         self.replay_buffer = ReplayBuffer(replay_buffer_size)

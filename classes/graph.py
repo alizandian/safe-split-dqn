@@ -7,10 +7,11 @@ import numpy as np
 class Graph:
     cells: List[List[int]] = None
 
-    def __init__(self, actions_count, dimention, mins, maxes, parent: Graph = None, location = None, experiences = None) -> None:
+    def __init__(self, actions_count, dimention, mins, maxes, parent: Graph = None, feedback=True, location = None, experiences = None) -> None:
         self.parent = parent if parent != None else self
         self.parent_dimention = parent.dimention if parent != None else None
         self.dimention = dimention
+        self.feedback = feedback
         self.location = location
         self.mins = mins
         self.maxes = maxes
@@ -57,6 +58,8 @@ class Graph:
 
 
     def feed_neural_network_feedback(self, values):
+        if self.feedback == False:
+            return
         unsafe_q_values = []
         for y in range(self.dimention[1]):
             for x in range(self.dimention[0]):
@@ -72,10 +75,10 @@ class Graph:
         max = np.max(values)
 
         #print(min)
-        if min > -0.8:
+        if min > -0.6:
             return
 
-        PERCENT = 0.01
+        PERCENT = 0.05
 
         d = (mean - min) / (max - min)
         dmax = self.clamp(d + (d * PERCENT), 0, 1)

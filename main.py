@@ -11,14 +11,14 @@ from typing import Dict, Tuple, List
 import time
 
 
-MAX_EPISODE = 300
+MAX_EPISODE = 200
 VISUALISATION = False
 PLOT_INTERVAL = 20
 ARTIFICIAL_DELAY = -0.1
 plot_values: Dict[str, Dict[int, Tuple[list, gym.Env, float]]] = {} # values, env and accuracy (tuple) of each episode (second dict) of each experiment (first dict).
 episode_info: Dict[str, list] = {}
 
-def experiment_base(predefined_actions = None):
+def experiment_rover_base(predefined_actions = None):
     env = RoverEnv(seed=100)
     i_dim, o_dim, DQN_nn = SimplifiedCartPole_SafetyMonitor_NN(2,4)
     _, _, MON_nn = SimplifiedCartPole_SafetyMonitor_NN(2,4)
@@ -26,18 +26,47 @@ def experiment_base(predefined_actions = None):
     actions, rewards = run_experiment("base", predefined_actions, agent, env)
     return actions
 
-def experiment_vanilla(predefined_actions = None):
+def experiment_rover_vanilla(predefined_actions = None):
     env = RoverEnv(seed=100)
     i_dim, o_dim, DQN_nn = SimplifiedCartPole_SafetyMonitor_NN(2,4)
     agent = AgentDQN(i_dim, o_dim, DQN_nn)
     actions, rewards = run_experiment("vanilla", predefined_actions, agent, env)
     return actions
 
-def experiment_refined_experiences(predefined_actions = None):
+def experiment_rover_refined(predefined_actions = None):
     env = RoverEnv(seed=100)
     i_dim, o_dim, DQN_nn = SimplifiedCartPole_SafetyMonitor_NN(2,4)
     agent = AgentIterativeSafetyGraph(i_dim, o_dim, DQN_nn, (10, 10))
     actions, rewards = run_experiment("refined", predefined_actions, agent, env)
+    return actions
+
+def experiment_rover_refined_no_feedback(predefined_actions = None):
+    env = RoverEnv(seed=100)
+    i_dim, o_dim, DQN_nn = SimplifiedCartPole_SafetyMonitor_NN(2,4)
+    agent = AgentIterativeSafetyGraph(i_dim, o_dim, DQN_nn, (10, 10), feedback=False)
+    actions, rewards = run_experiment("no-feedback", predefined_actions, agent, env)
+    return actions
+
+def experiment_pole_refined(predefined_actions = None):
+    env = FixedCartPoleEnv(seed=100)
+    i_dim, o_dim, DQN_nn = SimplifiedCartPole_SafetyMonitor_NN(2,2)
+    agent = AgentIterativeSafetyGraph(i_dim, o_dim, DQN_nn, (16, 16))
+    actions, rewards = run_experiment("refined", predefined_actions, agent, env)
+    return actions
+
+def experiment_pole_base(predefined_actions = None):
+    env = FixedCartPoleEnv(seed=100)
+    i_dim, o_dim, DQN_nn = SimplifiedCartPole_SafetyMonitor_NN(2,2)
+    _, _, MON_nn = SimplifiedCartPole_SafetyMonitor_NN(2,2)
+    agent = AgentSafeDQN(i_dim, o_dim, DQN_nn, MON_nn)
+    actions, rewards = run_experiment("base", predefined_actions, agent, env)
+    return actions
+
+def experiment_pole_vanilla(predefined_actions = None):
+    env = FixedCartPoleEnv(seed=100)
+    i_dim, o_dim, DQN_nn = SimplifiedCartPole_SafetyMonitor_NN(2,2)
+    agent = AgentDQN(i_dim, o_dim, DQN_nn)
+    actions, rewards = run_experiment("vanilla", predefined_actions, agent, env)
     return actions
 
 def experiment_refined_experiences_atari(predefined_actions = None):
@@ -45,21 +74,6 @@ def experiment_refined_experiences_atari(predefined_actions = None):
     i_dim, o_dim, DQN_nn = SimplifiedCartPole_SafetyMonitor_NN(2,3)
     agent = AgentIterativeSafetyGraph(i_dim, o_dim, DQN_nn, (20, 20))
     actions, rewards = run_experiment("refined", predefined_actions, agent, env)
-    return actions
-
-def experiment_refined_experiences_fixed_cartPole(predefined_actions = None):
-    env = FixedCartPoleEnv(seed=100)
-    i_dim, o_dim, DQN_nn = SimplifiedCartPole_SafetyMonitor_NN(2,2)
-    agent = AgentIterativeSafetyGraph(i_dim, o_dim, DQN_nn, (18, 18))
-    actions, rewards = run_experiment("refined", predefined_actions, agent, env)
-    return actions
-
-def experiment_fixed_cartPole(predefined_actions = None):
-    env = FixedCartPoleEnv(seed=100)
-    i_dim, o_dim, DQN_nn = SimplifiedCartPole_SafetyMonitor_NN(2,2)
-    _, _, MON_nn = SimplifiedCartPole_SafetyMonitor_NN(2,2)
-    agent = AgentSafeDQN(i_dim, o_dim, DQN_nn, MON_nn)
-    actions, rewards = run_experiment("not_refined", predefined_actions, agent, env)
     return actions
 
 def run_experiment(experiment_name, predefined_actions, agent, env):
@@ -163,6 +177,21 @@ def plot_episode_info():
     plt.legend()
     plt.show()
 
+def plot_episode_info_accuracy():
+    for experiment in episode_info.keys():
+        accuracies = []
+        ap = {}
+        for c in episode_info[experiment].values():
+            accuracies.append(c/100)
+        for i in range(0, len(accuracies), PLOT_INTERVAL):
+            l = accuracies[i:i+PLOT_INTERVAL]
+            a = sum(l)/len(l)
+            ap[i] = a
+
+        plt.plot(ap.keys(), ap.values(), label = experiment, linestyle="-.")
+    plt.legend()
+    plt.show()
+
 
 def plot(only_updates=False, only_accuracy=False, only_comparision=False): 
     if only_updates:
@@ -185,8 +214,14 @@ def plot(only_updates=False, only_accuracy=False, only_comparision=False):
         plt.show()
 
 if __name__ == "__main__":
-    actions=experiment_refined_experiences()
-    experiment_base()
-    experiment_vanilla()
+
+    experiment_rover_refined()
+    experiment_rover_refined_no_feedback()
+
+    # experiment_pole_refined()
+    # experiment_pole_base()
+    # experiment_pole_vanilla()
+
     plot(only_comparision=True)
     plot_episode_info()
+    plot_episode_info_accuracy()

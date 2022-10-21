@@ -6,7 +6,7 @@ import numpy as np
 import configparser
 
 class AgentIterativeSafetyGraph(object):
-    def __init__(self, input_dim, output_dim, nn_model, dimention, refined_experiences=True, gamma = 0.7, replay_buffer_size = 200, verbose = False):
+    def __init__(self, input_dim, output_dim, nn_model, dimention, refined_experiences=True, feedback=True, gamma = 0.7, replay_buffer_size = 200, verbose = False):
         config = configparser.ConfigParser()
         config.read('config.ini')
 
@@ -27,7 +27,7 @@ class AgentIterativeSafetyGraph(object):
         self.history_buffer = ReplayBuffer(1000)
         self.experience_buffer = ReplayBuffer(replay_buffer_size)
         self.dqn = DQN(input_dim = input_dim, output_dim = output_dim, nn_model = nn_model, gamma = gamma, verbose = verbose)
-        self.safety_graph = Graph(output_dim, dimention, (-1, -1), (1, 1))
+        self.safety_graph = Graph(output_dim, dimention, (-1, -1), (1, 1), feedback=feedback)
 
     def __clamp(self, n, smallest, largest): return max(smallest, min(n, largest))
 

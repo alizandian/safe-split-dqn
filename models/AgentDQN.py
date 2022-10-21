@@ -8,16 +8,16 @@ class AgentDQN(object):
         self.input_dim = input_dim
         self.output_dim = output_dim
         self.epsilon = 1.0
-        self.epsilon_min = 0.001
+        self.epsilon_min = 0.01
         self.epsilon_max = 1.0
         self.epsilon_interval = (self.epsilon_max - self.epsilon_min)
         self.frame_count = 0
-        self.epsilon_random_frames = 400
-        self.epsilon_greedy_frames = 400
+        self.epsilon_random_frames = 300
+        self.epsilon_greedy_frames = 300
         self.replay_buffer = ReplayBuffer(replay_buffer_size)
         self.update_interval = target_update_interval
         self.update_counter = 0
-        self.dqn = DQN_Base(input_dim = input_dim, output_dim = output_dim,nn_model = nn_model, gamma = gamma, verbose = verbose)
+        self.dqn = DQN_Base(input_dim = input_dim, output_dim = output_dim, nn_model = nn_model, gamma = gamma, verbose = verbose)
         self.previous_action_type = -1
 
     def get_action(self, input):
