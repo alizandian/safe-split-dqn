@@ -1,5 +1,5 @@
 from models.ReplayBuffer import ReplayBuffer
-from models.DQN import DQN
+from models.DQN_Base import DQN_Base
 import numpy as np
 
 class AgentDQN(object):
@@ -8,16 +8,16 @@ class AgentDQN(object):
         self.input_dim = input_dim
         self.output_dim = output_dim
         self.epsilon = 1.0
-        self.epsilon_min = 0.1
+        self.epsilon_min = 0.001
         self.epsilon_max = 1.0
         self.epsilon_interval = (self.epsilon_max - self.epsilon_min)
         self.frame_count = 0
-        self.epsilon_random_frames = 3500
-        self.epsilon_greedy_frames = 50000
+        self.epsilon_random_frames = 400
+        self.epsilon_greedy_frames = 400
         self.replay_buffer = ReplayBuffer(replay_buffer_size)
         self.update_interval = target_update_interval
         self.update_counter = 0
-        self.dqn = DQN(input_dim = input_dim, output_dim = output_dim,nn_model = nn_model, gamma = gamma, verbose = verbose)
+        self.dqn = DQN_Base(input_dim = input_dim, output_dim = output_dim,nn_model = nn_model, gamma = gamma, verbose = verbose)
         self.previous_action_type = -1
 
     def get_action(self, input):
@@ -55,8 +55,8 @@ class AgentDQN(object):
 
         return loss 
 
-    def add_transition(self, trans):
-        self.replay_buffer.append(trans)
+    def add_experience(self, experience):
+        self.replay_buffer.append(experience)
 
     def random_action(self):
         return np.random.randint(self.output_dim)

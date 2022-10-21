@@ -3,7 +3,7 @@ from environments.FixedCartPoleEnv import FixedCartPoleEnv
 from environments.RoverEnv import RoverEnv
 from environments.AtariEnv import AtariEnv
 from models.AgentSafeDQN import AgentSafeDQN
-from models.AgentSafeDQNSplit import AgentSafeDQNSplit
+from models.AgentDQN import AgentDQN
 from models.AgentIterativeSafetyGraph import AgentIterativeSafetyGraph
 from experiment.nn_config import *
 from matplotlib import pyplot as plt
@@ -11,9 +11,9 @@ from typing import Dict, Tuple, List
 import time
 
 
-MAX_EPISODE = 91
+MAX_EPISODE = 300
 VISUALISATION = False
-PLOT_INTERVAL = 10
+PLOT_INTERVAL = 20
 ARTIFICIAL_DELAY = -0.1
 plot_values: Dict[str, Dict[int, Tuple[list, gym.Env, float]]] = {} # values, env and accuracy (tuple) of each episode (second dict) of each experiment (first dict).
 episode_info: Dict[str, list] = {}
@@ -24,6 +24,13 @@ def experiment_base(predefined_actions = None):
     _, _, MON_nn = SimplifiedCartPole_SafetyMonitor_NN(2,4)
     agent = AgentSafeDQN(i_dim, o_dim, DQN_nn, MON_nn)
     actions, rewards = run_experiment("base", predefined_actions, agent, env)
+    return actions
+
+def experiment_vanilla(predefined_actions = None):
+    env = RoverEnv(seed=100)
+    i_dim, o_dim, DQN_nn = SimplifiedCartPole_SafetyMonitor_NN(2,4)
+    agent = AgentDQN(i_dim, o_dim, DQN_nn)
+    actions, rewards = run_experiment("vanilla", predefined_actions, agent, env)
     return actions
 
 def experiment_refined_experiences(predefined_actions = None):
@@ -178,7 +185,8 @@ def plot(only_updates=False, only_accuracy=False, only_comparision=False):
         plt.show()
 
 if __name__ == "__main__":
-    actions = experiment_refined_experiences()
-    actions = experiment_base()
-    #plot(only_comparision=True)
+    actions=experiment_refined_experiences()
+    experiment_base()
+    experiment_vanilla()
+    plot(only_comparision=True)
     plot_episode_info()
