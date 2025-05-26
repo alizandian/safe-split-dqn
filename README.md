@@ -100,8 +100,6 @@ Run the main experiment script (update with your actual entry point if needed):
 python main.py
 ```
 
-> Refer to project scripts or documentation to run specific case studies or configurations.
-
 ---
 
 ## 🔭 Future Work
