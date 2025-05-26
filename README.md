@@ -113,12 +113,11 @@ python main.py
 
 ## ⚖️ License
 
-> _No license file has been provided yet._  
-Please consider adding an open-source license (e.g., MIT, Apache 2.0) to clarify usage rights.
+der Fakultät Wirtschaftsinformatik und Angewandte Informatik\\
+der Otto-Friedrich-Universität Bamberg
 
 ---
 
 ## 📬 Contact
 
 For questions or collaboration inquiries, please reach out to the thesis author or repository maintainers.  
-> You can also open an issue on GitHub for technical questions or bug reports.
