@@ -1,22 +1,105 @@
-Safe Reinforcement Learning with Iterative Refinement of Variable DomainsThis repository contains the code project for the Master's thesis titled "Safe Reinforcement Learning with Iterative Refinement of Variable Domains." The project introduces a novel approach to enhance safety in Reinforcement Learning (RL) systems, particularly in environments with unknown or hidden unsafe states.AbstractIn systems interacting with physical environments, failure is often unavoidable due to uncertainties and the inability to perfectly capture real-world phenomena in computer models. This is especially critical in safety-critical systems where failures can lead to catastrophic consequences. This work proposes a module that leverages Reinforcement Learning to observe system interactions with the environment and iteratively gain knowledge to restrict the system from failing. The acquired knowledge is represented as a model that classifies system variable domains into safe and unsafe regions, becoming more accurate with continued interaction. Ultimately, our method uses this knowledge model to prevent systems from entering unsafe domains and consequently failing.FeaturesThis project introduces significant improvements over existing approaches, particularly in handling safety in Reinforcement Learning:Enhanced Accuracy: Achieves improved accuracy in detecting and avoiding unsafe states compared to preceding works and conventional RL methods.Reduced Failures: Significantly lowers the number of failures during the early stages of learning, which is crucial for safety-critical applications.Knowledge Extraction: Enables the extraction of learned safety knowledge in a formal, mathematical language, making the system more transparent and modular.Generalization: Incorporates a generalization mechanism within the Safety Graph module, allowing the system to learn about continuous and infinite state spaces from a finite number of experiences, drastically speeding up the learning process.Robustness: Overcomes limitations of previous methods, such as unstable accuracy and unextractable learned knowledge.MethodologyThe proposed system is composed of two primary modules:1. Safety Graph ModuleMaintains a graph model that classifies the state space into Safe, Unsafe, and Unsure regions.Iteratively updates and refines this graph model based on trajectories (experience data) from the agent's interactions with the environment.Refines raw experience data to improve data quality and uniformity for training the RL module.Utilizes the Reinforcement Learning module for generalization (feedback operation) to estimate the safety of unexplored states.Allows for the export of the learned safety knowledge at any time in a formal language (e.g., mathematical formulas).2. Reinforcement Learning ModuleEmploys a modified Q-Learning algorithm. Instead of maximizing future rewards, it minimizes them, effectively prioritizing the avoidance of unsafe states (which are assigned a minimum reward of -1).Its Neural Network is trained by the Safety Graph module with refined experience data, learning to predict the current safety model over the state space.This modular design allows for the replacement of the core RL algorithm with newer versions while maintaining the safety framework.Case Studies and ResultsThe effectiveness of the proposed approach has been demonstrated through five comprehensive case studies:Case Study 1 & 2 (Benchmarking): Showed consistent accuracy gains in both a custom "Rover" environment and the "Cartpole" environment, outperforming previous work and vanilla Reinforcement Learning agents.Case Study 3 (Failures Count Improvement): Highlighted that the proposed approach makes the fewest failures in the early learning stages, emphasizing its efficiency in safety-critical settings.Case Study 4 (Generalization Proof of Concept): Empirically proved that the generalization mechanism significantly speeds up the learning process (by almost 200%) without compromising accuracy.Case Study 5 (Knowledge Extraction): Visually demonstrated the Safety Graph module's ability to learn and represent hidden unsafe states, even starting with zero prior knowledge, and export this knowledge into a comprehensible format.These results collectively confirm the drastic accuracy improvements, reduced training episodes, fewer system failures, and the successful extraction of learned unsafe states.Implementation DetailsThe project leverages established libraries and frameworks for its implementation:Environments: Utilizes OpenAI Gym for creating and standardizing reinforcement learning environments.Reinforcement Learning Agents: Implemented using TensorFlow and its Keras API for Neural Network configurations.Program Structure: Designed to simulate experiments, allowing for benchmarking of different agent and environment configurations.Installation and UsageTo set up and run the project, follow these steps:Clone the repository:git clone https://github.com/alizandian/safe-split-dqn.git
+Safe Reinforcement Learning with Iterative Refinement of Variable Domains
+This repository contains the official implementation for the Master's thesis titled "Safe Reinforcement Learning with Iterative Refinement of Variable Domains." The project presents a novel method to improve safety in Reinforcement Learning (RL), particularly in environments containing unknown or hidden unsafe states.
+
+📜 Abstract
+In physical systems, failure is often unavoidable due to uncertainty and incomplete modeling. This is especially dangerous in safety-critical environments, where failure can result in catastrophic consequences. This work proposes a modular RL-based approach that incrementally learns to avoid unsafe states by refining its understanding of variable domains. The system develops a safety model that becomes more accurate through interaction, classifying states as Safe, Unsafe, or Unsure. This knowledge is used to prevent the agent from entering unsafe regions, significantly reducing failure rates during learning.
+
+✨ Features
+Enhanced Accuracy: Improves accuracy in detecting and avoiding unsafe states over baseline RL methods.
+
+Reduced Failures: Decreases the number of critical failures during early learning stages.
+
+Knowledge Extraction: Converts learned safety knowledge into interpretable mathematical formulas.
+
+Generalization: Learns from finite experiences and generalizes to infinite/continuous state spaces.
+
+Robustness: Solves instability issues and improves explainability over previous approaches.
+
+🧠 Methodology
+The system is composed of two primary modules:
+
+1. Safety Graph Module
+Classifies states as Safe, Unsafe, or Unsure using a graph-based representation.
+
+Refines the safety model using trajectory data from agent-environment interactions.
+
+Enhances training data quality for the RL module.
+
+Uses feedback from the RL module to estimate safety of unexplored states.
+
+Exports learned knowledge as formal expressions (e.g., logical/mathematical constraints).
+
+2. Reinforcement Learning Module
+Utilizes a modified Q-Learning algorithm that minimizes rewards, aiming to avoid unsafe states (reward = -1).
+
+Neural Network is trained on refined safety data from the graph module.
+
+The RL module remains swappable, allowing future integration of newer algorithms while preserving the safety layer.
+
+📊 Case Studies and Results
+✅ Benchmarking (Case Study 1 & 2)
+Tested on custom Rover and classic Cartpole environments.
+
+Demonstrated superior accuracy and safety over baseline RL.
+
+🛡️ Failure Reduction (Case Study 3)
+Achieved the lowest failure rates during early training.
+
+🧩 Generalization (Case Study 4)
+Accelerated learning by ~200% while maintaining high safety accuracy.
+
+📤 Knowledge Extraction (Case Study 5)
+Visualized and exported learned unsafe states even with zero prior knowledge.
+
+🛠️ Implementation Details
+Environments: OpenAI Gym
+
+RL Framework: TensorFlow + Keras API
+
+Simulation Structure: Designed to support benchmarking across multiple agents/environments.
+
+🚀 Installation & Usage
+1. Clone the Repository
+bash
+Copy
+Edit
+git clone https://github.com/alizandian/safe-split-dqn.git
 cd safe-split-dqn
-Create a virtual environment (recommended):python -m venv venv
+2. Create a Virtual Environment (Recommended)
+bash
+Copy
+Edit
+python -m venv venv
 # On Windows:
-# venv\Scripts\activate
+venv\Scripts\activate
 # On macOS/Linux:
 source venv/bin/activate
-Install dependencies:It is assumed that a requirements.txt file exists in the repository.pip install -r requirements.txt
-Run experiments:The thesis mentions a program structure overview (Figure 11) with a Run Experiments entry point. You would typically run the main script to start simulations.# Example: This command might vary based on your project's main entry point
+3. Install Dependencies
+Make sure requirements.txt exists in the root directory.
+
+bash
+Copy
+Edit
+pip install -r requirements.txt
+4. Run Experiments
+Run the main experiment script (update with your actual entry point if needed):
+
+bash
+Copy
+Edit
 python main.py
-Refer to the project's internal documentation or scripts for specific commands to run different case studies or experiments.Future WorkWhile the proposed approach shows significant effectiveness, particularly in guiding Neural Networks, the current graph model might face scalability issues with environments involving thousands or more system variables. Future work could focus on developing models with diminishing complexity concerning the number of system variables, enabling deployment in environments with extremely large state spaces.LicenseThis project is open-source. Please consider adding a LICENSE file to specify the terms under which others can use, modify, and distribute your work (e.g., MIT, Apache 2.0, GPL).ContactFor any questions or inquiries, please refer to the thesis author or the repository maintainers.
-  @media print {
-    .ms-editor-squiggler {
-        display:none !important;
-    }
-  }
-  .ms-editor-squiggler {
-    all: initial;
-    display: block !important;
-    height: 0px !important;
-    width: 0px !important;
-  }
+Refer to project scripts or documentation to run specific case studies or configurations.
+
+🔭 Future Work
+Scalability Improvements: The current graph model may face limitations in high-dimensional spaces (e.g., thousands of variables).
+
+Complexity Reduction: Future research could focus on graph representations that scale sub-linearly with the number of state variables.
+
+⚖️ License
+No license file has been provided yet.
+Please consider adding an open-source license (e.g., MIT, Apache 2.0) to clarify usage rights.
+
+📬 Contact
+For questions or collaboration inquiries, please reach out to the thesis author or repository maintainers.
+
+You can also open an issue on GitHub for technical questions or bug reports.
