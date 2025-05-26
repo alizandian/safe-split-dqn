@@ -99,7 +99,7 @@ Run the main experiment script (update with your actual entry point if needed):
 ```bash
 python main.py
 ```
-
+There are experiment functions in the main file you can comment and oncomment. When the code finishes running, the accumulate result will be shown as diagrams for comparision. 
 ---
 
 ## 🔭 Future Work
